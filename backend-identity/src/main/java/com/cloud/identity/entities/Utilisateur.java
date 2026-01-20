@@ -1,4 +1,4 @@
-package com.cloud.identity.model;
+package com.cloud.identity.entities;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -18,14 +18,22 @@ public class Utilisateur {
     @Column(name = "mot_de_passe", nullable = false)
     private String motDePasse;
 
-    @Column(nullable = false)
-    private String role = "UTILISATEUR"; // UTILISATEUR, MANAGER
+    @ManyToOne
+    @JoinColumn(name = "role_id")
+    private Role role;
 
-    @Column(name = "statut", nullable = false)
-    private String statut = "ACTIF"; // ACTIF, BLOQUE
+    @ManyToOne
+    @JoinColumn(name = "statut_actuel_id")
+    private StatutUtilisateur statutActuel;
 
     @Column(name = "tentatives_connexion")
     private int tentativesConnexion = 0;
+
+    @Column(name = "date_dernier_echec_connexion")
+    private LocalDateTime dateDernierEchecConnexion;
+
+    @Column(name = "date_deblocage_automatique")
+    private LocalDateTime dateDeblocageAutomatique;
 
     @Column(name = "derniere_connexion")
     private LocalDateTime derniereConnexion;
@@ -40,12 +48,16 @@ public class Utilisateur {
     public void setEmail(String email) { this.email = email; }
     public String getMotDePasse() { return motDePasse; }
     public void setMotDePasse(String motDePasse) { this.motDePasse = motDePasse; }
-    public String getRole() { return role; }
-    public void setRole(String role) { this.role = role; }
-    public String getStatut() { return statut; }
-    public void setStatut(String statut) { this.statut = statut; }
+    public Role getRole() { return role; }
+    public void setRole(Role role) { this.role = role; }
+    public StatutUtilisateur getStatutActuel() { return statutActuel; }
+    public void setStatutActuel(StatutUtilisateur statutActuel) { this.statutActuel = statutActuel; }
     public int getTentativesConnexion() { return tentativesConnexion; }
     public void setTentativesConnexion(int tentativesConnexion) { this.tentativesConnexion = tentativesConnexion; }
+    public LocalDateTime getDateDernierEchecConnexion() { return dateDernierEchecConnexion; }
+    public void setDateDernierEchecConnexion(LocalDateTime dateDernierEchecConnexion) { this.dateDernierEchecConnexion = dateDernierEchecConnexion; }
+    public LocalDateTime getDateDeblocageAutomatique() { return dateDeblocageAutomatique; }
+    public void setDateDeblocageAutomatique(LocalDateTime dateDeblocageAutomatique) { this.dateDeblocageAutomatique = dateDeblocageAutomatique; }
     public LocalDateTime getDerniereConnexion() { return derniereConnexion; }
     public void setDerniereConnexion(LocalDateTime derniereConnexion) { this.derniereConnexion = derniereConnexion; }
     public LocalDateTime getDateCreation() { return dateCreation; }

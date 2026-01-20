@@ -1,4 +1,4 @@
-package com.cloud.identity.model;
+package com.cloud.identity.entities;
 
 import jakarta.persistence.*;
 

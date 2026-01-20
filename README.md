@@ -35,7 +35,7 @@ docker-compose up --build
 - **Backend API (Swagger)** : [http://localhost:8081/swagger-ui/index.html](http://localhost:8081/swagger-ui/index.html)
 - **Serveur de Cartes** : [http://localhost:8082](http://localhost:8082)
 - **pgAdmin (Gestion DB)** : [http://localhost:5050](http://localhost:5050) (Login: `admin@routier.mg`, PWD: `admin`)
-- **Base de données** : `localhost:5432` (User: `user_cloud`, PWD: `password_cloud`, DB: `routier_db`)
+- **Base de données** : `localhost:5432` (User: `user_cloud`, PWD: `password_cloud`, DB: `routier_db`, Host: `db`)
 
 ## 📝 À faire (Prochaines étapes)
 
