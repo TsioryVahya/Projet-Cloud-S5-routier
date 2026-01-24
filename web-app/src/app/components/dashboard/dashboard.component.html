@@ -1,0 +1,47 @@
+<div class="flex h-screen bg-gray-100">
+  <!-- Sidebar -->
+  <aside class="w-64 bg-slate-800 text-white flex flex-col shadow-xl">
+    <div class="p-6 bg-slate-900 border-b border-slate-700">
+      <h2 class="text-xl font-bold text-blue-400">Manager Dashboard</h2>
+      <p class="text-sm text-slate-400 mt-1 truncate">{{ userEmail }}</p>
+    </div>
+    
+    <nav class="flex-1 py-4">
+      <a routerLink="/dashboard/map" routerLinkActive="bg-blue-600 border-l-4 border-white" 
+         class="flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
+        <span class="mr-3">🗺️</span>
+        Carte des travaux
+      </a>
+      <a routerLink="/dashboard/signalements" routerLinkActive="bg-blue-600 border-l-4 border-white"
+         class="flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
+        <span class="mr-3">📋</span>
+        Gestion des signalements
+      </a>
+      <a routerLink="/dashboard/users" routerLinkActive="bg-blue-600 border-l-4 border-white"
+         class="flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
+        <span class="mr-3">👥</span>
+        Utilisateurs
+      </a>
+      <a routerLink="/dashboard/config" routerLinkActive="bg-blue-600 border-l-4 border-white"
+         class="flex items-center px-6 py-3 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
+        <span class="mr-3">⚙️</span>
+        Configuration
+      </a>
+    </nav>
+
+    <div class="p-4 border-t border-slate-700">
+      <button (click)="logout()" 
+              class="w-full bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg transition-colors flex items-center justify-center font-medium">
+        <span class="mr-2">🚪</span>
+        Déconnexion
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 overflow-y-auto p-8">
+    <div class="max-w-7xl mx-auto">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+</div>

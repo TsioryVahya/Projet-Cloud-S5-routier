@@ -21,16 +21,19 @@ Ce projet est un système de gestion des signalements routiers comprenant un bac
 ## 🛠️ Installation et Lancement
 
 ### Prérequis
+
 - Docker et Docker Compose
 - Node.js (pour le développement local web/mobile)
 - Java 17+ (pour le développement local backend)
 
 ### Lancer l'infrastructure (DB + Cartes + Backend + Web)
+
 ```bash
 docker-compose up --build
 ```
 
 ### Accès aux services
+
 - **Web App** : [http://localhost:4200](http://localhost:4200)
 - **Backend API (Swagger)** : [http://localhost:8081/swagger-ui/index.html](http://localhost:8081/swagger-ui/index.html)
 - **Serveur de Cartes** : [http://localhost:8082](http://localhost:8082)

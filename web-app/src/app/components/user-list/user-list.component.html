@@ -1,0 +1,75 @@
+<div class="space-y-6">
+  <header class="flex justify-between items-center bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Gestion des Utilisateurs</h1>
+      <p class="text-sm text-gray-500">Gérez les comptes et les accès système</p>
+    </div>
+    <div class="bg-indigo-50 text-indigo-600 px-4 py-2 rounded-lg font-medium">
+      {{ users.length }} utilisateurs
+    </div>
+  </header>
+
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left">
+        <thead class="bg-gray-50 border-b border-gray-100">
+          <tr>
+            <th class="px-6 py-4 text-sm font-semibold text-gray-600">Utilisateur</th>
+            <th class="px-6 py-4 text-sm font-semibold text-gray-600">Rôle</th>
+            <th class="px-6 py-4 text-sm font-semibold text-gray-600">Statut</th>
+            <th class="px-6 py-4 text-sm font-semibold text-gray-600">Dernière connexion</th>
+            <th class="px-6 py-4 text-sm font-semibold text-gray-600">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50">
+          <tr *ngFor="let u of users" class="hover:bg-gray-50/50 transition-colors">
+            <td class="px-6 py-4">
+              <div class="flex items-center">
+                <div class="h-8 w-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 mr-3 text-sm font-bold">
+                  {{ u.email.charAt(0).toUpperCase() }}
+                </div>
+                <span class="text-sm font-medium text-gray-900">{{ u.email }}</span>
+              </div>
+            </td>
+            <td class="px-6 py-4">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-medium" 
+                    [ngClass]="u.role.nom === 'ADMIN' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'">
+                {{ u.role.nom }}
+              </span>
+            </td>
+            <td class="px-6 py-4">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                    [ngClass]="{
+                      'bg-green-100 text-green-700': u.statutActuel.nom === 'ACTIF',
+                      'bg-red-100 text-red-700': u.statutActuel.nom === 'BLOQUE',
+                      'bg-gray-100 text-gray-700': u.statutActuel.nom === 'INACTIF'
+                    }">
+                <span class="w-1.5 h-1.5 rounded-full mr-1.5" 
+                      [ngClass]="{
+                        'bg-green-500': u.statutActuel.nom === 'ACTIF',
+                        'bg-red-500': u.statutActuel.nom === 'BLOQUE',
+                        'bg-gray-500': u.statutActuel.nom === 'INACTIF'
+                      }"></span>
+                {{ u.statutActuel.nom }}
+              </span>
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-500">
+              {{ u.derniereConnexion ? (u.derniereConnexion | date:'short') : 'Jamais' }}
+            </td>
+            <td class="px-6 py-4 space-x-3">
+              <button *ngIf="u.statutActuel.nom === 'BLOQUE'" 
+                      (click)="unblock(u.email)"
+                      class="text-green-600 hover:text-green-800 font-medium text-sm transition-colors">
+                Débloquer
+              </button>
+              <button (click)="deleteUser(u.id)"
+                      class="text-red-600 hover:text-red-800 font-medium text-sm transition-colors">
+                Supprimer
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

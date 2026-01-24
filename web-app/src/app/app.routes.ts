@@ -1,13 +1,32 @@
 import { Routes } from '@angular/router';
 import { LoginComponent } from './components/login/login.component';
+import { MapComponent } from './components/map/map.component';
+import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
+  { path: 'map', component: MapComponent },
   { 
     path: 'dashboard', 
-    loadComponent: () => import('./app.component').then(m => m.AppComponent), // Placeholder
-    canActivate: [authGuard] 
+    component: DashboardComponent,
+    canActivate: [authGuard],
+    children: [
+      { path: 'map', component: MapComponent },
+      { 
+        path: 'signalements', 
+        loadComponent: () => import('./components/signalement-list/signalement-list.component').then(m => m.SignalementListComponent) 
+      },
+      { 
+        path: 'users', 
+        loadComponent: () => import('./components/user-list/user-list.component').then(m => m.UserListComponent) 
+      },
+      { 
+        path: 'config', 
+        loadComponent: () => import('./components/config/config.component').then(m => m.ConfigComponent) 
+      },
+      { path: '', redirectTo: 'map', pathMatch: 'full' }
+    ]
   },
-  { path: '', redirectTo: '/login', pathMatch: 'full' }
+  { path: '', redirectTo: '/map', pathMatch: 'full' }
 ];
