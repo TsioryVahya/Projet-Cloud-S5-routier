@@ -12,6 +12,10 @@ export const routes: Routes = [
     component: DashboardComponent,
     canActivate: [authGuard],
     children: [
+      { 
+        path: 'overview', 
+        loadComponent: () => import('./components/stats/stats.component').then(m => m.StatsComponent) 
+      },
       { path: 'map', component: MapComponent },
       { 
         path: 'signalements', 
@@ -25,7 +29,7 @@ export const routes: Routes = [
         path: 'config', 
         loadComponent: () => import('./components/config/config.component').then(m => m.ConfigComponent) 
       },
-      { path: '', redirectTo: 'map', pathMatch: 'full' }
+      { path: '', redirectTo: 'overview', pathMatch: 'full' }
     ]
   },
   { path: '', redirectTo: '/map', pathMatch: 'full' }

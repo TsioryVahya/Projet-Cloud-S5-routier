@@ -1,0 +1,101 @@
+<div class="space-y-8">
+  <header>
+    <h1 class="text-2xl font-bold text-gray-800">Vue d'ensemble du Projet</h1>
+    <p class="text-gray-500">Indicateurs clés de performance et statistiques</p>
+  </header>
+
+  <!-- KPI Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4">
+      <div class="p-3 bg-blue-100 rounded-xl text-blue-600 text-2xl">📊</div>
+      <div>
+        <p class="text-sm text-gray-500 font-medium uppercase tracking-wider">Total Signalements</p>
+        <p class="text-2xl font-bold text-gray-900">{{ stats.total }}</p>
+      </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4">
+      <div class="p-3 bg-yellow-100 rounded-xl text-yellow-600 text-2xl">🚧</div>
+      <div>
+        <p class="text-sm text-gray-500 font-medium uppercase tracking-wider">En Cours</p>
+        <p class="text-2xl font-bold text-gray-900">{{ stats.enCours }}</p>
+      </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4">
+      <div class="p-3 bg-green-100 rounded-xl text-green-600 text-2xl">✅</div>
+      <div>
+        <p class="text-sm text-gray-500 font-medium uppercase tracking-wider">Terminés</p>
+        <p class="text-2xl font-bold text-gray-900">{{ stats.termine }}</p>
+      </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4">
+      <div class="p-3 bg-red-100 rounded-xl text-red-600 text-2xl">🔔</div>
+      <div>
+        <p class="text-sm text-gray-500 font-medium uppercase tracking-wider">Nouveaux</p>
+        <p class="text-2xl font-bold text-gray-900">{{ stats.nouveau }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detailed Stats -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- Financials -->
+    <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+      <h3 class="text-lg font-bold text-gray-800 mb-6 flex items-center">
+        <span class="mr-2">💰</span> Budget et Ressources
+      </h3>
+      <div class="space-y-6">
+        <div>
+          <div class="flex justify-between mb-2">
+            <span class="text-sm text-gray-500">Budget Total Estimé</span>
+            <span class="font-bold text-gray-900">{{ stats.totalBudget | currency:'Ar ':'symbol':'1.0-0' }}</span>
+          </div>
+          <div class="w-full bg-gray-100 rounded-full h-2">
+            <div class="bg-blue-500 h-2 rounded-full" style="width: 75%"></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex justify-between mb-2">
+            <span class="text-sm text-gray-500">Surface Totale à Réparer</span>
+            <span class="font-bold text-gray-900">{{ stats.totalSurface }} m²</span>
+          </div>
+          <div class="w-full bg-gray-100 rounded-full h-2">
+            <div class="bg-green-500 h-2 rounded-full" style="width: 60%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Breakdown -->
+    <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+      <h3 class="text-lg font-bold text-gray-800 mb-6 flex items-center">
+        <span class="mr-2">📈</span> État des Travaux
+      </h3>
+      <div class="space-y-4">
+        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+          <div class="flex items-center">
+            <span class="w-3 h-3 bg-blue-500 rounded-full mr-3"></span>
+            <span class="text-gray-600">Nouveaux Signalements</span>
+          </div>
+          <span class="font-bold">{{ stats.nouveau }}</span>
+        </div>
+        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+          <div class="flex items-center">
+            <span class="w-3 h-3 bg-yellow-500 rounded-full mr-3"></span>
+            <span class="text-gray-600">En Cours de Réparation</span>
+          </div>
+          <span class="font-bold">{{ stats.enCours }}</span>
+        </div>
+        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+          <div class="flex items-center">
+            <span class="w-3 h-3 bg-green-500 rounded-full mr-3"></span>
+            <span class="text-gray-600">Travaux Terminés</span>
+          </div>
+          <span class="font-bold">{{ stats.termine }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

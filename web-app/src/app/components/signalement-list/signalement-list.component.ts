@@ -14,6 +14,11 @@ import { Signalement, StatutSignalement } from '../../models/signalement.model';
 export class SignalementListComponent implements OnInit {
   signalements: Signalement[] = [];
   statuses: StatutSignalement[] = [];
+  
+  // Edit Modal State
+  showEditModal = false;
+  editingSignalement: any = null;
+  isSaving = false;
 
   constructor(private signalementService: SignalementService) {}
 
@@ -36,17 +41,55 @@ export class SignalementListComponent implements OnInit {
     });
   }
 
+  openEditModal(signalement: Signalement): void {
+    this.editingSignalement = {
+      id: signalement.id,
+      latitude: signalement.latitude,
+      longitude: signalement.longitude,
+      statutId: signalement.statut.id,
+      description: signalement.description || '',
+      budget: signalement.budget || 0,
+      surfaceM2: signalement.surfaceM2 || 0,
+      entrepriseConcerne: signalement.entrepriseConcerne || ''
+    };
+    this.showEditModal = true;
+  }
+
+  closeEditModal(): void {
+    this.showEditModal = false;
+    this.editingSignalement = null;
+  }
+
+  saveSignalement(): void {
+    if (!this.editingSignalement) return;
+    
+    this.isSaving = true;
+    this.signalementService.updateSignalement(this.editingSignalement.id, this.editingSignalement).subscribe({
+      next: () => {
+        this.isSaving = false;
+        this.closeEditModal();
+        this.loadSignalements();
+      },
+      error: (err) => {
+        console.error(err);
+        this.isSaving = false;
+      }
+    });
+  }
+
   onStatusChange(signalement: Signalement, newStatusId: string): void {
     const updateData = {
       statutId: parseInt(newStatusId),
       latitude: signalement.latitude,
       longitude: signalement.longitude,
-      description: signalement.description
+      description: signalement.description,
+      budget: signalement.budget,
+      surfaceM2: signalement.surfaceM2,
+      entrepriseConcerne: signalement.entrepriseConcerne
     };
 
     this.signalementService.updateSignalement(signalement.id, updateData).subscribe({
       next: () => {
-        console.log('Statut mis à jour');
         this.loadSignalements();
       },
       error: (err) => console.error(err)
