@@ -19,6 +19,8 @@ public class FirebaseSignalementListener {
 
     @PostConstruct
     public void init() {
+        System.out.println("ℹ️ Le Listener automatique Firebase est DÉSACTIVÉ (Synchronisation manuelle requise).");
+        /*
         System.out.println("🔥🔥🔥 INITIALISATION DU LISTENER FIREBASE... 🔥🔥🔥");
         try {
             if (firestore == null) {
@@ -67,5 +69,6 @@ public class FirebaseSignalementListener {
             System.err.println("❌ ERREUR LORS DE L'ATTACHEMENT DU LISTENER FIREBASE : " + ex.getMessage());
             ex.printStackTrace();
         }
+        */
     }
 }

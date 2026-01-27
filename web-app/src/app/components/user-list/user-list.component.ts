@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UserService } from '../../services/user.service';
 import { Utilisateur, Role, StatutUtilisateur } from '../../models/user.model';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-user-list',
@@ -18,6 +19,7 @@ export class UserListComponent implements OnInit {
   
   showModal = false;
   isEditMode = false;
+  isSyncing = false;
   newUser: any = {
     id: null,
     email: '',
@@ -99,6 +101,25 @@ export class UserListComponent implements OnInit {
         }
       });
     }
+  }
+
+  globalSync(): void {
+    this.isSyncing = true;
+    forkJoin({
+      import: this.userService.syncUsers(),
+      export: this.userService.syncUsersToFirebase()
+    }).subscribe({
+      next: (res: any) => {
+        this.isSyncing = false;
+        this.loadUsers();
+        alert(`Synchronisation complète terminée !\n- Importés : ${res.import.utilisateurs}\n- Exportés : ${res.export.syncedUsers}`);
+      },
+      error: (err) => {
+        this.isSyncing = false;
+        console.error(err);
+        alert('Erreur lors de la synchronisation globale');
+      }
+    });
   }
 
   syncUsers(): void {
