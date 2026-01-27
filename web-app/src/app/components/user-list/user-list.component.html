@@ -56,24 +56,24 @@
             </td>
             <td class="px-6 py-4">
               <span class="px-2.5 py-0.5 rounded-full text-xs font-medium" 
-                    [ngClass]="u.role.nom === 'ADMIN' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'">
-                {{ u.role.nom }}
+                    [ngClass]="u.role?.nom === 'ADMIN' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'">
+                {{ u.role?.nom || 'Sans rôle' }}
               </span>
             </td>
             <td class="px-6 py-4">
               <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                     [ngClass]="{
-                      'bg-green-100 text-green-700': u.statutActuel.nom === 'ACTIF',
-                      'bg-red-100 text-red-700': u.statutActuel.nom === 'BLOQUE',
-                      'bg-gray-100 text-gray-700': u.statutActuel.nom === 'INACTIF'
+                      'bg-green-100 text-green-700': u.statutActuel?.nom === 'ACTIF',
+                      'bg-red-100 text-red-700': u.statutActuel?.nom === 'BLOQUE',
+                      'bg-gray-100 text-gray-700': u.statutActuel?.nom === 'INACTIF'
                     }">
                 <span class="w-1.5 h-1.5 rounded-full mr-1.5" 
                       [ngClass]="{
-                        'bg-green-500': u.statutActuel.nom === 'ACTIF',
-                        'bg-red-500': u.statutActuel.nom === 'BLOQUE',
-                        'bg-gray-500': u.statutActuel.nom === 'INACTIF'
+                        'bg-green-500': u.statutActuel?.nom === 'ACTIF',
+                        'bg-red-500': u.statutActuel?.nom === 'BLOQUE',
+                        'bg-gray-500': u.statutActuel?.nom === 'INACTIF'
                       }"></span>
-                {{ u.statutActuel.nom }}
+                {{ u.statutActuel?.nom || 'Inconnu' }}
               </span>
             </td>
             <td class="px-6 py-4 text-sm text-gray-500">
@@ -84,7 +84,7 @@
                     class="text-indigo-600 hover:text-indigo-800 font-medium text-sm transition-colors">
               Modifier
             </button>
-            <button *ngIf="u.statutActuel.nom === 'BLOQUE'" 
+            <button *ngIf="u.statutActuel?.nom === 'BLOQUE'" 
                     (click)="unblock(u.email)"
                     class="text-green-600 hover:text-green-800 font-medium text-sm transition-colors">
               Débloquer
