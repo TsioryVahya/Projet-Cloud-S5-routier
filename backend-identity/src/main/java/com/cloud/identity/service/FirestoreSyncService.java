@@ -2,10 +2,8 @@ package com.cloud.identity.service;
 
 import com.cloud.identity.entities.Signalement;
 import com.cloud.identity.entities.SignalementsDetail;
-import com.cloud.identity.repository.SignalementRepository;
-import com.cloud.identity.repository.SignalementsDetailRepository;
-import com.cloud.identity.repository.StatutsSignalementRepository;
-import com.cloud.identity.repository.UtilisateurRepository;
+import com.cloud.identity.entities.Utilisateur;
+import com.cloud.identity.repository.*;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +31,93 @@ public class FirestoreSyncService {
 
     @Autowired
     private UtilisateurRepository utilisateurRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
+
+    @Autowired
+    private StatutUtilisateurRepository statutUtilisateurRepository;
+
+    /**
+     * Synchronise les utilisateurs de Firestore vers PostgreSQL.
+     */
+    public Map<String, Integer> syncUsersFromFirestoreToPostgres() {
+        int createdUsers = 0;
+        try {
+            ApiFuture<QuerySnapshot> future = firestore.collection("utilisateurs").get();
+            List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+
+            for (QueryDocumentSnapshot document : documents) {
+                String email = document.getString("email");
+                if (email == null || email.isEmpty()) continue;
+
+                if (utilisateurRepository.findByEmail(email).isPresent()) {
+                    continue;
+                }
+
+                Utilisateur user = new Utilisateur();
+                user.setEmail(email);
+                user.setMotDePasse(document.getString("motDePasse") != null ? document.getString("motDePasse") : "default_password");
+                
+                // Rôle par défaut : UTILISATEUR
+                user.setRole(roleRepository.findByNom("UTILISATEUR").orElse(null));
+                
+                // Statut par défaut : ACTIF
+                user.setStatutActuel(statutUtilisateurRepository.findByNom("ACTIF").orElse(null));
+                
+                user.setDateCreation(java.time.Instant.now());
+                
+                utilisateurRepository.save(user);
+                createdUsers++;
+            }
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la synchronisation des utilisateurs Firestore -> Postgres : " + e.getMessage());
+        }
+
+        Map<String, Integer> result = new HashMap<>();
+        result.put("utilisateurs", createdUsers);
+        return result;
+    }
+
+    /**
+     * Synchronise les utilisateurs de PostgreSQL vers Firestore.
+     */
+    public Map<String, Integer> syncUsersFromPostgresToFirestore() {
+        int syncedUsers = 0;
+        try {
+            List<Utilisateur> users = utilisateurRepository.findAll();
+            CollectionReference usersCol = firestore.collection("utilisateurs");
+
+            for (Utilisateur user : users) {
+                Map<String, Object> data = new HashMap<>();
+                data.put("postgresId", user.getId().toString());
+                data.put("email", user.getEmail());
+                data.put("motDePasse", user.getMotDePasse());
+                
+                if (user.getRole() != null) {
+                    data.put("role", user.getRole().getNom());
+                }
+                
+                if (user.getStatutActuel() != null) {
+                    data.put("statut", user.getStatutActuel().getNom());
+                }
+                
+                data.put("dateCreation", user.getDateCreation() != null ? user.getDateCreation().toString() : null);
+                data.put("derniereConnexion", user.getDerniereConnexion() != null ? user.getDerniereConnexion().toString() : null);
+
+                // Utiliser l'email comme ID de document dans Firestore pour éviter les doublons
+                // ou un ID basé sur l'email si on veut rester consistent.
+                usersCol.document(user.getEmail()).set(data).get();
+                syncedUsers++;
+            }
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la synchronisation des utilisateurs Postgres -> Firestore : " + e.getMessage());
+        }
+
+        Map<String, Integer> result = new HashMap<>();
+        result.put("syncedUsers", syncedUsers);
+        return result;
+    }
 
     /**
      * Synchronise les données de Firestore vers PostgreSQL.

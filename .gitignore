@@ -21,5 +21,9 @@ backend-identity/logs.txt
 # Temp
 .docker_temp_*
 
-#secret
+# Secrets
 backend-identity/src/main/resources/serviceAccountKey.json
+google-services.json
+*.p12
+*.jks
+

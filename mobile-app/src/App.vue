@@ -7,9 +7,8 @@
 <script setup lang="ts">
 import { IonApp, IonRouterOutlet } from '@ionic/vue';
 import { onMounted } from 'vue';
-import { db, auth } from './firebase/config';
+import { db } from './firebase/config';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { onAuthStateChanged } from 'firebase/auth';
 import { store, setSignalements, setUser } from './store';
 
 onMounted(() => {
@@ -23,10 +22,11 @@ onMounted(() => {
     setSignalements(data);
   });
 
-  // 2. Gérer l'état d'authentification global
-  onAuthStateChanged(auth, (firebaseUser) => {
-    setUser(firebaseUser);
-  });
+  // 2. Gérer la session persistante locale (optionnel)
+  const savedUser = localStorage.getItem('app_user');
+  if (savedUser) {
+    setUser(JSON.parse(savedUser));
+  }
 });
 </script>
 

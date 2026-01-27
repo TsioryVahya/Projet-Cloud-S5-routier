@@ -6,4 +6,5 @@ target/
 .idea/
 *.iml
 *.log
+src/main/resources/serviceAccountKey.json
 \target\

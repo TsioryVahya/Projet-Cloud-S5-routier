@@ -36,10 +36,13 @@ export class SignalementListComponent implements OnInit {
   loadSignalements(): void {
     this.signalementService.getAllSignalements().subscribe({
       next: (data) => {
+        console.log('Données reçues du backend:', data);
         this.signalements = data;
         this.updateStats();
       },
-      error: (err) => console.error(err)
+      error: (err) => {
+        console.error('Erreur lors du chargement des signalements', err);
+      }
     });
   }
 

@@ -155,10 +155,9 @@ import {
   trashOutline
 } from 'ionicons/icons';
 import * as L from 'leaflet';
-import { db, auth } from '../firebase/config';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { store } from '../store';
+import { db } from '../firebase/config';
+import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { store, setUser } from '../store';
 
 // UI State
 const showLoginModal = ref(false);
@@ -218,19 +217,53 @@ const handleLogin = async () => {
   isAuthLoading.value = true;
   authError.value = "";
   try {
-    await signInWithEmailAndPassword(auth, loginEmail.value, loginPassword.value);
+    // On cherche l'utilisateur dans la collection "utilisateurs" de Firestore
+    const q = query(
+      collection(db, 'utilisateurs'), 
+      where('email', '==', loginEmail.value.trim()),
+      where('motDePasse', '==', loginPassword.value.trim())
+    );
+    
+    const querySnapshot = await getDocs(q);
+    
+    if (querySnapshot.empty) {
+      authError.value = "Email ou mot de passe incorrect";
+      return;
+    }
+
+    const userDoc = querySnapshot.docs[0];
+    const userData = userDoc.data();
+    
+    // Vérifier si le compte est bloqué
+    if (userData.statut === 'BLOQUE') {
+      authError.value = "Votre compte est bloqué. Contactez un administrateur.";
+      return;
+    }
+
+    const appUser = {
+      email: userData.email,
+      role: userData.role,
+      statut: userData.statut,
+      postgresId: userData.postgresId
+    };
+
+    setUser(appUser);
+    localStorage.setItem('app_user', JSON.stringify(appUser));
+    
     showLoginModal.value = false;
     loginEmail.value = '';
     loginPassword.value = '';
   } catch (err: any) {
-    authError.value = "Email ou mot de passe incorrect";
+    console.error('Erreur Auth:', err);
+    authError.value = "Une erreur est survenue lors de la connexion";
   } finally {
     isAuthLoading.value = false;
   }
 };
 
 const handleLogout = () => {
-  signOut(auth);
+  setUser(null);
+  localStorage.removeItem('app_user');
   filterMine.value = false;
 };
 

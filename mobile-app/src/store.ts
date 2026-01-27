@@ -1,6 +1,4 @@
 import { reactive, ref } from 'vue';
-import { User } from 'firebase/auth';
-
 export interface Signalement {
   id: string; // Correspond à id_firebase dans Postgres
   latitude: number;
@@ -19,9 +17,16 @@ export interface Signalement {
   [key: string]: any;
 }
 
+export interface AppUser {
+  email: string;
+  role?: string;
+  statut?: string;
+  postgresId?: string;
+}
+
 // État global simple
 export const store = reactive({
-  user: null as User | null,
+  user: null as AppUser | null,
   signalements: [] as Signalement[],
   loading: true
 });
@@ -30,6 +35,6 @@ export const setSignalements = (data: Signalement[]) => {
   store.signalements = data;
 };
 
-export const setUser = (u: User | null) => {
+export const setUser = (u: AppUser | null) => {
   store.user = u;
 };
