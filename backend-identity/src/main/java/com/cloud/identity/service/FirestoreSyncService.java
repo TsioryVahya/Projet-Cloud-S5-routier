@@ -59,11 +59,17 @@ public class FirestoreSyncService {
                 user.setEmail(email);
                 user.setMotDePasse(document.getString("motDePasse") != null ? document.getString("motDePasse") : "default_password");
                 
-                // Rôle par défaut : UTILISATEUR
-                user.setRole(roleRepository.findByNom("UTILISATEUR").orElse(null));
+                // Récupérer le rôle depuis Firestore ou utiliser UTILISATEUR par défaut
+                String roleNom = document.getString("role");
+                if (roleNom == null) roleNom = "UTILISATEUR";
+                user.setRole(roleRepository.findByNom(roleNom.toUpperCase())
+                        .orElseGet(() -> roleRepository.findByNom("UTILISATEUR").orElse(null)));
                 
-                // Statut par défaut : ACTIF
-                user.setStatutActuel(statutUtilisateurRepository.findByNom("ACTIF").orElse(null));
+                // Récupérer le statut depuis Firestore ou utiliser ACTIF par défaut
+                String statutNom = document.getString("statut");
+                if (statutNom == null) statutNom = "ACTIF";
+                user.setStatutActuel(statutUtilisateurRepository.findByNom(statutNom.toUpperCase())
+                        .orElseGet(() -> statutUtilisateurRepository.findByNom("ACTIF").orElse(null)));
                 
                 user.setDateCreation(java.time.Instant.now());
                 
