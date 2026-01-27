@@ -20,3 +20,6 @@ backend-identity/logs.txt
 
 # Temp
 .docker_temp_*
+
+ # Secrets
+ backend-identity/src/main/resources/serviceAccountKey.json
