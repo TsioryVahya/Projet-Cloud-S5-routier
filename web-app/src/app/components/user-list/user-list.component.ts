@@ -66,8 +66,8 @@ export class UserListComponent implements OnInit {
       id: user.id,
       email: user.email,
       motDePasse: '', 
-      role: { id: user.role?.id || (this.roles.length > 0 ? this.roles[0].id : 1) },
-      statutActuel: { id: user.statutActuel?.id || (this.statuts.length > 0 ? this.statuts[0].id : 1) }
+      role: user.role ? { id: user.role.id } : (this.roles.length > 0 ? { id: this.roles[0].id } : null),
+      statutActuel: user.statutActuel ? { id: user.statutActuel.id } : (this.statuts.length > 0 ? { id: this.statuts[0].id } : null)
     };
   }
 
@@ -77,26 +77,42 @@ export class UserListComponent implements OnInit {
 
   saveUser(): void {
     if (this.isEditMode) {
-      this.userService.updateUser(this.newUser.id, this.newUser).subscribe({
+      // Préparer l'objet pour l'update sans changer l'ID
+      const updateData = {
+        email: this.newUser.email,
+        motDePasse: this.newUser.motDePasse,
+        role: { id: parseInt(this.newUser.role.id) },
+        statutActuel: { id: parseInt(this.newUser.statutActuel.id) }
+      };
+
+      this.userService.updateUser(this.newUser.id, updateData).subscribe({
         next: () => {
           this.closeModal();
           this.loadUsers();
           alert('Utilisateur mis à jour avec succès');
         },
         error: (err) => {
-          console.error(err);
+          console.error('Erreur update:', err);
           alert('Erreur lors de la mise à jour');
         }
       });
     } else {
-      this.userService.createUser(this.newUser).subscribe({
+      // Création d'un nouvel utilisateur
+      const createData = {
+        email: this.newUser.email,
+        motDePasse: this.newUser.motDePasse,
+        role: { id: parseInt(this.newUser.role.id) },
+        statutActuel: { id: parseInt(this.newUser.statutActuel.id) }
+      };
+
+      this.userService.createUser(createData).subscribe({
         next: () => {
           this.closeModal();
           this.loadUsers();
           alert('Utilisateur créé avec succès');
         },
         error: (err) => {
-          console.error(err);
+          console.error('Erreur création:', err);
           alert('Erreur lors de la création');
         }
       });
@@ -105,19 +121,27 @@ export class UserListComponent implements OnInit {
 
   globalSync(): void {
     this.isSyncing = true;
-    forkJoin({
-      import: this.userService.syncUsers(),
-      export: this.userService.syncUsersToFirebase()
-    }).subscribe({
-      next: (res: any) => {
-        this.isSyncing = false;
-        this.loadUsers();
-        alert(`Synchronisation complète terminée !\n- Importés : ${res.import.utilisateurs}\n- Exportés : ${res.export.syncedUsers}`);
+    // On synchronise d'abord Postgres -> Firebase (export)
+    // PUIS Firebase -> Postgres (import) pour éviter d'écraser les modifs récentes
+    this.userService.syncUsersToFirebase().subscribe({
+      next: (resExport: any) => {
+        this.userService.syncUsers().subscribe({
+          next: (resImport: any) => {
+            this.isSyncing = false;
+            this.loadUsers();
+            alert(`Synchronisation complète terminée !\n- Exportés : ${resExport.syncedUsers}\n- Importés : ${resImport.utilisateurs}`);
+          },
+          error: (err) => {
+            this.isSyncing = false;
+            console.error(err);
+            alert('Erreur lors de l\'importation');
+          }
+        });
       },
       error: (err) => {
         this.isSyncing = false;
         console.error(err);
-        alert('Erreur lors de la synchronisation globale');
+        alert('Erreur lors de l\'exportation');
       }
     });
   }
