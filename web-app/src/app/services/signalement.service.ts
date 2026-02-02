@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Signalement, StatutSignalement } from '../models/signalement.model';
+import { Signalement, StatutSignalement, TypeSignalement } from '../models/signalement.model';
 
 @Injectable({
   providedIn: 'root'
@@ -10,11 +10,16 @@ export class SignalementService {
   private apiUrl = 'http://localhost:8081/api/signalements';
   private statusUrl = 'http://localhost:8081/api/statuts-signalement';
   private entrepriseUrl = 'http://localhost:8081/api/entreprises';
+  private typeUrl = 'http://localhost:8081/api/types-signalement';
 
   constructor(private http: HttpClient) {}
 
   getAllSignalements(): Observable<Signalement[]> {
     return this.http.get<Signalement[]>(this.apiUrl);
+  }
+
+  getAllTypes(): Observable<TypeSignalement[]> {
+    return this.http.get<TypeSignalement[]>(this.typeUrl);
   }
 
   getAllEntreprises(): Observable<any[]> {

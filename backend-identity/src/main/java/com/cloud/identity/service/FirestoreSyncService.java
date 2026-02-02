@@ -18,7 +18,7 @@ import java.util.Optional;
 @Service
 public class FirestoreSyncService {
 
-    @Autowired
+    @Autowired(required = false)
     private Firestore firestore;
 
     @Autowired
@@ -42,10 +42,17 @@ public class FirestoreSyncService {
     @Autowired
     private EntrepriseRepository entrepriseRepository;
 
+    @Autowired
+    private TypeSignalementRepository typeSignalementRepository;
+
     /**
      * Synchronise les utilisateurs de Firestore vers PostgreSQL.
      */
     public Map<String, Integer> syncUsersFromFirestoreToPostgres() {
+        if (firestore == null) {
+            System.err.println("⚠️ Impossible de synchroniser : Firestore n'est pas initialisé.");
+            return Map.of("created", 0, "total", 0);
+        }
         int createdUsers = 0;
         try {
             ApiFuture<QuerySnapshot> future = firestore.collection("utilisateurs").get();
@@ -109,6 +116,10 @@ public class FirestoreSyncService {
      * Synchronise un utilisateur unique de PostgreSQL vers Firestore.
      */
     public void syncSingleUserToFirestore(Utilisateur user) {
+        if (firestore == null) {
+            System.err.println("⚠️ Impossible de synchroniser l'utilisateur : Firestore n'est pas initialisé.");
+            return;
+        }
         try {
             CollectionReference usersCol = firestore.collection("utilisateurs");
             Map<String, Object> data = new HashMap<>();
@@ -140,6 +151,10 @@ public class FirestoreSyncService {
      * Synchronise les utilisateurs de PostgreSQL vers Firestore.
      */
     public Map<String, Integer> syncUsersFromPostgresToFirestore() {
+        if (firestore == null) {
+            System.err.println("⚠️ Impossible de synchroniser les utilisateurs : Firestore n'est pas initialisé.");
+            return Map.of("syncedUsers", 0);
+        }
         int syncedUsers = 0;
         try {
             List<Utilisateur> users = utilisateurRepository.findAll();
@@ -162,6 +177,10 @@ public class FirestoreSyncService {
      * Firestore.
      */
     public void updateEmailInFirestoreSignalements(String oldEmail, String newEmail) {
+        if (firestore == null) {
+            System.err.println("⚠️ Impossible de mettre à jour Firestore : Firestore n'est pas initialisé.");
+            return;
+        }
         System.out.println("🔍 Recherche de signalements à mettre à jour : " + oldEmail + " -> " + newEmail);
         try {
             // 1. Chercher dans utilisateur.email (structure imbriquée)
@@ -202,6 +221,10 @@ public class FirestoreSyncService {
      * Supprime un utilisateur dans Firestore.
      */
     public void deleteUserInFirestore(String userIdOrEmail) {
+        if (firestore == null) {
+            System.err.println("⚠️ Impossible de supprimer dans Firestore : Firestore n'est pas initialisé.");
+            return;
+        }
         try {
             // On essaie de supprimer par ID d'abord (recommandé car plus stable)
             firestore.collection("utilisateurs").document(userIdOrEmail).delete().get();
@@ -225,6 +248,10 @@ public class FirestoreSyncService {
      * Synchronise les données de Firestore vers PostgreSQL.
      */
     public Map<String, Integer> syncFromFirestoreToPostgres() {
+        if (firestore == null) {
+            System.err.println("⚠️ Impossible de synchroniser : Firestore n'est pas initialisé.");
+            return Map.of("signalements", 0);
+        }
         int syncedSignalements = 0;
         int createdUsers = 0;
 
@@ -249,6 +276,8 @@ public class FirestoreSyncService {
                 Double longitude = document.getDouble("longitude");
                 String description = document.getString("description");
                 String statutNom = document.getString("statut");
+                String typeNom = document.getString("type");
+                if (typeNom == null) typeNom = document.getString("type_nom");
 
                 // Gérer la date
                 java.time.Instant dateSignalement = java.time.Instant.now();
@@ -312,6 +341,12 @@ public class FirestoreSyncService {
                             newStatut.setNom(finalStatutNom);
                             return statutRepository.save(newStatut);
                         }));
+
+                // Gérer le type
+                if (typeNom != null && !typeNom.isEmpty()) {
+                    final String finalTypeNom = typeNom;
+                    typeSignalementRepository.findByNom(finalTypeNom).ifPresent(s::setType);
+                }
 
                 // Gérer l'utilisateur
                 final String finalEmail = email;
@@ -399,6 +434,10 @@ public class FirestoreSyncService {
      * PostgreSQL.
      */
     public String createSignalementInFirestore(Signalement signalement, SignalementsDetail details) {
+        if (firestore == null) {
+            System.err.println("⚠️ Impossible de créer dans Firestore : Firestore n'est pas initialisé.");
+            return null;
+        }
         try {
             Map<String, Object> data = new HashMap<>();
             data.put("postgresId", signalement.getId().toString());
@@ -409,6 +448,10 @@ public class FirestoreSyncService {
 
             if (signalement.getStatut() != null) {
                 data.put("statut", signalement.getStatut().getNom());
+            }
+
+            if (signalement.getType() != null) {
+                data.put("type", signalement.getType().getNom());
             }
 
             if (signalement.getUtilisateur() != null) {
@@ -455,6 +498,11 @@ public class FirestoreSyncService {
             if (signalement.getStatut() != null) {
                 updates.put("statut", signalement.getStatut().getNom());
             }
+
+            if (signalement.getType() != null) {
+                updates.put("type", signalement.getType().getNom());
+            }
+
             updates.put("postgresId", signalement.getId().toString());
             updates.put("latitude", signalement.getLatitude());
             updates.put("longitude", signalement.getLongitude());

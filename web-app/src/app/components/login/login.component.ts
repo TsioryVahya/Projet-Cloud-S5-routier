@@ -16,8 +16,8 @@ export class LoginComponent {
   private router = inject(Router);
 
   credentials = {
-    email: '',
-    password: ''
+    email: 'manager@routier.mg',
+    password: 'manager123'
   };
   
   error: string | null = null;

@@ -85,6 +85,13 @@ public class SignalementService {
                 dto.setStatut("nouveau");
             }
 
+            // Gérer le type
+            if (s.getType() != null) {
+                dto.setTypeNom(s.getType().getNom());
+                dto.setTypeIcone(s.getType().getIconePath());
+                dto.setTypeCouleur(s.getType().getCouleur());
+            }
+
             // Récupérer les détails via la relation fetchée ou fallback repository
             SignalementsDetail d = s.getDetails();
             if (d == null) {

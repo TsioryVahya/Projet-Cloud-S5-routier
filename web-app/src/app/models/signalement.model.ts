@@ -3,12 +3,23 @@ export interface StatutSignalement {
   nom: string;
 }
 
+export interface TypeSignalement {
+  id: number;
+  nom: string;
+  description: string;
+  iconePath: string;
+  couleur: string;
+}
+
 export interface Signalement {
   id?: string;
   postgresId?: string;
   idFirebase?: string;
   dateSignalement: string;
-  statut: string; // Changé de StatutSignalement à string pour correspondre au DTO
+  statut: string;
+  typeNom?: string;
+  typeIcone?: string;
+  typeCouleur?: string;
   latitude: number;
   longitude: number;
   description?: string;

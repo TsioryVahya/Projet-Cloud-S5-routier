@@ -67,12 +67,29 @@
     </div>
   </div>
 
+  <!-- Search Bar -->
+  <div class="mb-8">
+    <div class="relative max-w-xl group">
+      <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+        <svg class="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </div>
+      <input type="text" 
+             [(ngModel)]="searchTerm" 
+             (ngModelChange)="applyFilter()"
+             placeholder="Rechercher par ID, type, description..." 
+             class="block w-full pl-11 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm">
+    </div>
+  </div>
+
   <!-- Main Table -->
   <div class="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden">
     <div class="overflow-x-auto">
       <table class="w-full text-left border-collapse">
         <thead>
           <tr class="bg-slate-50/50 border-b border-slate-100">
+            <th class="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Type</th>
             <th class="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Date & Heure</th>
             <th class="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Statut</th>
             <th class="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Entreprise</th>
@@ -82,7 +99,25 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-50">
-          <tr *ngFor="let s of signalements" class="hover:bg-slate-50/80 transition-all group">
+          <tr *ngFor="let s of filteredSignalements" class="hover:bg-slate-50/80 transition-all group">
+            <td class="px-8 py-5">
+              <div class="flex items-center gap-3">
+                <div *ngIf="s.typeIcone" 
+                     [style.background-color]="(s.typeCouleur || '#64748b') + '20'"
+                     [style.color]="s.typeCouleur || '#64748b'"
+                     class="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm">
+                  <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path [attr.d]="s.typeIcone"></path>
+                  </svg>
+                </div>
+                <div *ngIf="!s.typeIcone" class="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div class="font-bold text-slate-700 text-sm">{{ s.typeNom || 'Indéfini' }}</div>
+              </div>
+            </td>
             <td class="px-8 py-5">
               <div class="font-bold text-slate-700">{{ s.dateSignalement | date:'dd MMM yyyy' }}</div>
               <div class="text-xs text-slate-400 font-medium">{{ s.dateSignalement | date:'HH:mm' }}</div>

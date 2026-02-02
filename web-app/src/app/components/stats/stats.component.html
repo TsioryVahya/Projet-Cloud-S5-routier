@@ -7,6 +7,13 @@
         <p class="text-gray-600 mt-2 font-medium">Indicateurs clés de performance et statistiques avancées</p>
       </div>
       <div class="flex items-center space-x-3">
+        <a routerLink="/dashboard/signalements" 
+           class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-bold text-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+          </svg>
+          Voir tous les signalements
+        </a>
         <span class="text-sm font-medium text-gray-500">Mise à jour :</span>
         <span class="px-3 py-1.5 bg-blue-50 text-blue-700 text-sm font-semibold rounded-lg border border-blue-100">
           {{ updateTime | date:'dd/MM/yyyy HH:mm' }}

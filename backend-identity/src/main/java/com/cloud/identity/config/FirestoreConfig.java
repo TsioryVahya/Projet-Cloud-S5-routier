@@ -16,17 +16,18 @@ import java.io.InputStream;
 public class FirestoreConfig {
 
     @Bean
-    public Firestore firestore() throws IOException {
+    public Firestore firestore() {
         System.out.println("🔥 Initialisation Firebase via Classpath...");
 
         try {
-            // Charger le fichier de credentials UNE SEULE FOIS
+            // Charger le fichier de credentials
             System.out.println("🔍 Recherche du fichier serviceAccountKey.json dans le classpath...");
             ClassPathResource resource = new ClassPathResource("serviceAccountKey.json");
             
             if (!resource.exists()) {
-                System.err.println("❌ CRITIQUE : Fichier serviceAccountKey.json introuvable !");
-                throw new IOException("Fichier serviceAccountKey.json introuvable dans le classpath !");
+                System.err.println("⚠️ ATTENTION : Fichier serviceAccountKey.json introuvable !");
+                System.err.println("⚠️ La synchronisation Firebase sera désactivée.");
+                return null;
             }
 
             InputStream serviceAccount = resource.getInputStream();
@@ -35,7 +36,7 @@ public class FirestoreConfig {
             // Créer les credentials
             GoogleCredentials credentials = GoogleCredentials.fromStream(serviceAccount);
 
-            // Initialiser Firebase Admin SDK UNE SEULE FOIS
+            // Initialiser Firebase Admin SDK
             if (FirebaseApp.getApps().isEmpty()) {
                 FirebaseOptions options = FirebaseOptions.builder()
                         .setCredentials(credentials)
@@ -43,21 +44,13 @@ public class FirestoreConfig {
 
                 FirebaseApp.initializeApp(options);
                 System.out.println("✅ FirebaseApp initialisé avec succès.");
-            } else {
-                System.out.println("ℹ️ FirebaseApp déjà initialisé.");
             }
 
-            // Utiliser FirestoreClient qui RÉUTILISE les credentials de FirebaseApp
-            // Cela évite de créer une nouvelle instance de credentials qui nécessiterait un
-            // token
-            Firestore firestore = FirestoreClient.getFirestore();
-            System.out.println("✅ Firestore client obtenu avec succès.");
-            return firestore;
+            return FirestoreClient.getFirestore();
 
         } catch (Exception e) {
-            System.err.println("❌ ERREUR lors de l'initialisation Firebase : " + e.getMessage());
-            e.printStackTrace();
-            throw e;
+            System.err.println("⚠️ ERREUR lors de l'initialisation Firebase (Désactivée) : " + e.getMessage());
+            return null;
         }
     }
 }

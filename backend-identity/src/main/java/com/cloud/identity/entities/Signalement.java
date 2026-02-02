@@ -27,6 +27,10 @@ public class Signalement {
     @JoinColumn(name = "statut_id")
     private StatutsSignalement statut;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "type_id")
+    private TypeSignalement type;
+
     @Column(name = "latitude", nullable = false)
     private Double latitude;
 
@@ -78,6 +82,14 @@ public class Signalement {
 
     public void setStatut(StatutsSignalement statut) {
         this.statut = statut;
+    }
+
+    public TypeSignalement getType() {
+        return type;
+    }
+
+    public void setType(TypeSignalement type) {
+        this.type = type;
     }
 
     public Double getLatitude() {

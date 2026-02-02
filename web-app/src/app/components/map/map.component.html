@@ -54,6 +54,13 @@
   <div class="absolute top-6 right-6 z-[1001] flex items-center gap-3">
     <!-- User Profile / Logout (If logged in) -->
     <div *ngIf="authService.isLoggedIn()" class="flex items-center gap-3">
+      <a routerLink="/dashboard/signalements" 
+         class="flex items-center gap-2 px-5 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl text-white hover:bg-blue-600/20 hover:border-blue-500/50 transition-all group shadow-xl">
+        <svg class="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+        </svg>
+        <span class="text-sm font-black uppercase tracking-widest">Liste Signalements</span>
+      </a>
       <div class="hidden md:flex flex-col items-end">
         <span class="text-[10px] font-black text-white/60 uppercase tracking-widest">Connecté</span>
         <span class="text-xs font-bold text-white">{{ authService.getCurrentUser()?.email }}</span>
@@ -206,6 +213,17 @@
           <p class="text-sm text-slate-600 leading-relaxed font-medium">
             {{ selectedSignalement?.description || 'Aucune description détaillée n\'a été fournie pour cet incident.' }}
           </p>
+        </div>
+
+        <div class="mt-4">
+          <a [routerLink]="['/dashboard/signalements']" 
+             [queryParams]="{ search: selectedSignalement?.id }"
+             class="flex items-center justify-center gap-2 w-full py-3 bg-white border border-slate-200 rounded-2xl text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all text-xs font-bold uppercase tracking-wider">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            </svg>
+            Voir dans la liste complète
+          </a>
         </div>
       </section>
     </div>

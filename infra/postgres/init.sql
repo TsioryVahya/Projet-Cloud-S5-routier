@@ -147,3 +147,42 @@ ON CONFLICT (email) DO NOTHING;
 -- Ajout d'une entrée initiale dans l'historique pour le manager
 INSERT INTO historique_utilisateur (utilisateur_id, statut_id)
 SELECT id, statut_actuel_id FROM utilisateurs WHERE email = 'manager@routier.mg';
+
+
+----modificattion: ajout type de signalement
+-- Table des Types de Signalement
+CREATE TABLE types_signalement (
+    id SERIAL PRIMARY KEY,
+    nom VARCHAR(100) UNIQUE NOT NULL,
+    description TEXT,
+    icone_path TEXT NOT NULL, -- Chemin SVG de l'icône
+    couleur VARCHAR(7) DEFAULT '#FF0000', -- Couleur hex pour différencier visuellement
+    actif BOOLEAN DEFAULT TRUE,
+    date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Modification de la table signalements pour ajouter le type
+ALTER TABLE signalements 
+ADD COLUMN type_id INT REFERENCES types_signalement(id);
+
+CREATE INDEX idx_signalements_type ON signalements(type_id);
+
+INSERT INTO types_signalement (nom, description, icone_path, couleur) VALUES
+(
+    'Nid de poule',
+    'Trou ou dégradation importante de la chaussée',
+    'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
+    '#E53935'
+),
+(
+    'Affaissement',
+    'Affaissement de la chaussée ou du bas-côté',
+    'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm-1 13v-6h2v6h-2zm0-8V5h2v2h-2z',
+    '#FB8C00'
+),
+(
+    'Inondation',
+    'Accumulation d''eau sur la chaussée',
+    'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9c-1.66 0-3-1.34-3-3 0-.97.46-1.84 1.18-2.39.1.74.31 1.43.62 2.06.33.66.76 1.26 1.27 1.77.07.07.13.14.2.21-.08.22-.27.35-.27.35z',
+    '#0288D1'
+);

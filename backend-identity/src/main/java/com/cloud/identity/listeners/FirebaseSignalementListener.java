@@ -14,7 +14,7 @@ public class FirebaseSignalementListener {
     @Autowired
     private SignalementService signalementService;
 
-    @Autowired
+    @Autowired(required = false)
     private Firestore firestore;
 
     @PostConstruct

@@ -27,6 +27,9 @@ public class SignalementDTO {
     private String description;
     private BigDecimal budget;
     private String statut;
+    private String typeNom;
+    private String typeIcone;
+    private String typeCouleur;
     private String email; 
     private UtilisateurDTO utilisateur;
 
@@ -48,6 +51,30 @@ public class SignalementDTO {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getTypeNom() {
+        return typeNom;
+    }
+
+    public void setTypeNom(String typeNom) {
+        this.typeNom = typeNom;
+    }
+
+    public String getTypeIcone() {
+        return typeIcone;
+    }
+
+    public void setTypeIcone(String typeIcone) {
+        this.typeIcone = typeIcone;
+    }
+
+    public String getTypeCouleur() {
+        return typeCouleur;
+    }
+
+    public void setTypeCouleur(String typeCouleur) {
+        this.typeCouleur = typeCouleur;
     }
 
     public String getPostgresId() {

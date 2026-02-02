@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { SignalementService } from '../../services/signalement.service';
-import { Signalement, StatutSignalement } from '../../models/signalement.model';
+import { Signalement, StatutSignalement, TypeSignalement } from '../../models/signalement.model';
 
 @Component({
   selector: 'app-signalement-list',
@@ -13,7 +14,10 @@ import { Signalement, StatutSignalement } from '../../models/signalement.model';
 })
 export class SignalementListComponent implements OnInit {
   signalements: Signalement[] = [];
+  filteredSignalements: Signalement[] = [];
+  searchTerm: string = '';
   statuses: StatutSignalement[] = [];
+  types: TypeSignalement[] = [];
   entreprises: any[] = [];
   
   // Modal States
@@ -27,12 +31,31 @@ export class SignalementListComponent implements OnInit {
   isSyncing = false;
   syncMessage = '';
 
-  constructor(private signalementService: SignalementService) {}
+  constructor(
+    private signalementService: SignalementService,
+    private route: ActivatedRoute
+  ) {}
 
   ngOnInit(): void {
     this.loadSignalements();
     this.loadStatuses();
+    this.loadTypes();
     this.loadEntreprises();
+
+    // Handle search parameter from URL
+    this.route.queryParams.subscribe(params => {
+      if (params['search']) {
+        this.searchTerm = params['search'];
+        this.applyFilter();
+      }
+    });
+  }
+
+  loadTypes(): void {
+    this.signalementService.getAllTypes().subscribe({
+      next: (data) => this.types = data,
+      error: (err) => console.error('Erreur lors du chargement des types', err)
+    });
   }
 
   loadSignalements(): void {
@@ -40,12 +63,27 @@ export class SignalementListComponent implements OnInit {
       next: (data) => {
         console.log('Données reçues du backend:', data);
         this.signalements = data;
+        this.applyFilter();
         this.updateStats();
       },
       error: (err) => {
         console.error('Erreur lors du chargement des signalements', err);
       }
     });
+  }
+
+  applyFilter(): void {
+    if (!this.searchTerm) {
+      this.filteredSignalements = this.signalements;
+    } else {
+      const term = this.searchTerm.toLowerCase();
+      this.filteredSignalements = this.signalements.filter(s => 
+        String(s.id).includes(term) || 
+        (s.description && s.description.toLowerCase().includes(term)) ||
+        (s.typeNom && s.typeNom.toLowerCase().includes(term)) ||
+        (s.statut && s.statut.toLowerCase().includes(term))
+      );
+    }
   }
 
   stats = {
