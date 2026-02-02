@@ -31,6 +31,10 @@ public class SignalementDTO {
     private String typeIcone;
     private String typeCouleur;
     private String email; 
+    
+    @com.google.cloud.firestore.annotation.PropertyName("utilisateur_id")
+    private String utilisateurId;
+
     private UtilisateurDTO utilisateur;
 
     public static class UtilisateurDTO {
@@ -191,5 +195,15 @@ public class SignalementDTO {
 
     public void setUtilisateur(UtilisateurDTO utilisateur) {
         this.utilisateur = utilisateur;
+    }
+
+    @com.google.cloud.firestore.annotation.PropertyName("utilisateur_id")
+    public String getUtilisateurId() {
+        return utilisateurId;
+    }
+
+    @com.google.cloud.firestore.annotation.PropertyName("utilisateur_id")
+    public void setUtilisateurId(String utilisateurId) {
+        this.utilisateurId = utilisateurId;
     }
 }

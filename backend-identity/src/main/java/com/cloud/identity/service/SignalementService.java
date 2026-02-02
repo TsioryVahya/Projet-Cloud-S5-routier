@@ -49,6 +49,10 @@ public class SignalementService {
     public Map<String, Integer> synchroniserDonnees() {
         System.out.println("🚀 Début de l'opération de synchronisation globale...");
         
+        // 0. Synchroniser les utilisateurs d'abord (important pour lier les signalements)
+        System.out.println("👥 Étape 0 : Synchronisation des utilisateurs...");
+        firestoreSyncService.syncUsersFromFirestoreToPostgres();
+
         // 1. D'abord on ramène ce qui est nouveau sur Mobile vers Postgres
         Map<String, Integer> result = firestoreSyncService.syncFromFirestoreToPostgres();
         System.out.println("✅ Étape 1 terminée : " + result.getOrDefault("signalements", 0) + " signalements récupérés de Firestore.");
@@ -280,13 +284,39 @@ public class SignalementService {
 
         // Gérer l'utilisateur
         String email = null;
+        UUID utilisateurId = null;
+
+        if (dto.getUtilisateurId() != null && !dto.getUtilisateurId().isEmpty()) {
+            try {
+                utilisateurId = UUID.fromString(dto.getUtilisateurId());
+            } catch (Exception e) {
+                System.err.println("Erreur conversion utilisateurId UUID : " + dto.getUtilisateurId());
+            }
+        }
+
         if (dto.getUtilisateur() != null && dto.getUtilisateur().getEmail() != null) {
             email = dto.getUtilisateur().getEmail();
         } else if (dto.getEmail() != null) {
             email = dto.getEmail();
         }
 
-        if (email != null) {
+        if (utilisateurId != null) {
+            Optional<Utilisateur> optUser = utilisateurRepository.findById(utilisateurId);
+            if (optUser.isPresent()) {
+                s.setUtilisateur(optUser.get());
+            } else if (email != null) {
+                // Fallback sur l'email si l'ID n'est pas trouvé
+                final String finalEmail = email;
+                Utilisateur utilisateur = utilisateurRepository.findByEmail(finalEmail)
+                        .orElseGet(() -> {
+                            Utilisateur newUser = new Utilisateur();
+                            newUser.setEmail(finalEmail);
+                            newUser.setMotDePasse("default_password");
+                            return utilisateurRepository.save(newUser);
+                        });
+                s.setUtilisateur(utilisateur);
+            }
+        } else if (email != null) {
             final String finalEmail = email;
             Utilisateur utilisateur = utilisateurRepository.findByEmail(finalEmail)
                     .orElseGet(() -> {

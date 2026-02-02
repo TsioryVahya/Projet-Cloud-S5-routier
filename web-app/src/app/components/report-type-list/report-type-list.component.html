@@ -5,13 +5,24 @@
       <h1 class="text-2xl font-black text-slate-800 tracking-tight">Types de Signalement</h1>
       <p class="text-slate-500 text-sm mt-1">Gérez les catégories de signalements routiers</p>
     </div>
-    <a routerLink="/dashboard/types-signalement/new" 
-       class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg shadow-blue-600/20 active:scale-95">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
-      </svg>
-      Nouveau Type
-    </a>
+    <div class="flex gap-3">
+      <button (click)="syncToFirebase()" 
+              [disabled]="syncing"
+              class="bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg shadow-orange-600/20 active:scale-95">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" [class.animate-spin]="syncing" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/>
+        </svg>
+        {{ syncing ? 'Synchronisation...' : 'Synchroniser Firebase' }}
+      </button>
+
+      <a routerLink="/dashboard/types-signalement/new" 
+         class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg shadow-blue-600/20 active:scale-95">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+        </svg>
+        Nouveau Type
+      </a>
+    </div>
   </div>
 
   <!-- Loading State -->

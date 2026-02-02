@@ -30,4 +30,8 @@ export class ReportTypeService {
   deleteType(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/${id}`);
   }
+
+  syncToFirebase(): Observable<any> {
+    return this.http.post(`${this.apiUrl}/sync-to-firebase`, {});
+  }
 }

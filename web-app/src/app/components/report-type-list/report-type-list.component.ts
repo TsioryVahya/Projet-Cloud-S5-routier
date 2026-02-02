@@ -16,6 +16,7 @@ export class ReportTypeListComponent implements OnInit {
   reportTypes: TypeSignalement[] = [];
   loading = true;
   error: string | null = null;
+  syncing = false;
 
   constructor(
     private reportTypeService: ReportTypeService,
@@ -69,5 +70,22 @@ export class ReportTypeListComponent implements OnInit {
         }
       });
     }
+  }
+
+  syncToFirebase(): void {
+    if (this.syncing) return;
+
+    this.syncing = true;
+    this.reportTypeService.syncToFirebase().subscribe({
+      next: (result) => {
+        this.syncing = false;
+        alert(`Synchronisation réussie ! ${result.syncedTypes} types ont été envoyés vers Firebase.`);
+      },
+      error: (err) => {
+        console.error('Erreur lors de la synchronisation:', err);
+        this.syncing = false;
+        alert('Erreur lors de la synchronisation vers Firebase.');
+      }
+    });
   }
 }

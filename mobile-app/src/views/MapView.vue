@@ -244,7 +244,7 @@ const handleLogin = async () => {
       email: userData.email,
       role: userData.role,
       statut: userData.statut,
-      postgresId: userData.postgresId
+      postgresId: userData.id // On utilise le champ 'id' de Firestore qui contient le UUID
     };
 
     setUser(appUser);
@@ -310,7 +310,7 @@ const submitReport = async () => {
       longitude: newSignalementPoint.value.lng,
       description: reportDescription.value,
       photo_url: reportPhotoUrl.value,
-      email: store.user.email,
+      utilisateur_id: store.user.postgresId,
       statut: 'nouveau',
       entreprise: null,
       dateSignalement: new Date().toISOString(),
