@@ -23,9 +23,23 @@ onMounted(() => {
   });
 
   // 2. Gérer la session persistante locale (optionnel)
-  const savedUser = localStorage.getItem('app_user');
-  if (savedUser) {
-    setUser(JSON.parse(savedUser));
+  const savedUserStr = localStorage.getItem('app_user');
+  if (savedUserStr) {
+    const savedUser = JSON.parse(savedUserStr);
+    
+    // Vérifier l'expiration de la session
+    if (savedUser.expiresAt) {
+      const expirationDate = new Date(savedUser.expiresAt);
+      if (expirationDate < new Date()) {
+        console.log("Session expirée, déconnexion...");
+        localStorage.removeItem('app_user');
+        setUser(null);
+      } else {
+        setUser(savedUser);
+      }
+    } else {
+      setUser(savedUser);
+    }
   }
 });
 </script>

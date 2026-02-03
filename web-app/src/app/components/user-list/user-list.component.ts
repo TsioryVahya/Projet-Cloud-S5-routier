@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { UserService } from '../../services/user.service';
 import { Utilisateur, Role, StatutUtilisateur } from '../../models/user.model';
 import { forkJoin } from 'rxjs';
@@ -16,6 +17,7 @@ export class UserListComponent implements OnInit {
   users: Utilisateur[] = [];
   roles: Role[] = [];
   statuts: StatutUtilisateur[] = [];
+  onlyBlocked = false;
   
   showModal = false;
   isEditMode = false;
@@ -28,15 +30,34 @@ export class UserListComponent implements OnInit {
     statutActuel: { id: 1 }
   };
 
-  constructor(private userService: UserService) {}
+  constructor(
+    private userService: UserService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
-    this.loadUsers();
+    this.route.queryParams.subscribe(params => {
+      this.onlyBlocked = params['blocked'] === 'true';
+      this.loadUsers();
+    });
     this.loadMetadata();
   }
 
+  setFilter(blocked: boolean): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { blocked: blocked ? 'true' : null },
+      queryParamsHandling: 'merge'
+    });
+  }
+
   loadUsers(): void {
-    this.userService.getAllUsers().subscribe({
+    const obs = this.onlyBlocked 
+      ? this.userService.getBlockedUsers() 
+      : this.userService.getAllUsers();
+      
+    obs.subscribe({
       next: (data) => this.users = data,
       error: (err) => console.error(err)
     });
@@ -121,27 +142,25 @@ export class UserListComponent implements OnInit {
 
   globalSync(): void {
     this.isSyncing = true;
-    // On synchronise d'abord Postgres -> Firebase (export)
-    // PUIS Firebase -> Postgres (import) pour éviter d'écraser les modifs récentes
-    this.userService.syncUsersToFirebase().subscribe({
-      next: (resExport: any) => {
-        this.userService.syncUsers().subscribe({
-          next: (resImport: any) => {
+    this.userService.syncUsers().subscribe({
+      next: (importRes: any) => {
+        this.userService.syncUsersToFirebase().subscribe({
+          next: (exportRes: any) => {
             this.isSyncing = false;
             this.loadUsers();
-            alert(`Synchronisation complète terminée !\n- Exportés : ${resExport.syncedUsers}\n- Importés : ${resImport.utilisateurs}`);
+            alert(`Synchronisation complète terminée !\n- Créés : ${importRes.utilisateurs_crees}\n- Mis à jour : ${importRes.utilisateurs_mis_a_jour}\n- Exportés : ${exportRes.syncedUsers}`);
           },
           error: (err) => {
             this.isSyncing = false;
             console.error(err);
-            alert('Erreur lors de l\'importation');
+            alert('Erreur lors de l\'export vers Firebase');
           }
         });
       },
       error: (err) => {
         this.isSyncing = false;
         console.error(err);
-        alert('Erreur lors de l\'exportation');
+        alert('Erreur lors de l\'import depuis Firestore');
       }
     });
   }
@@ -150,7 +169,7 @@ export class UserListComponent implements OnInit {
     this.userService.syncUsers().subscribe({
       next: (res) => {
         this.loadUsers();
-        alert(`Synchronisation terminée : ${res.utilisateurs} utilisateurs importés.`);
+        alert(`Synchronisation terminée :\n- Créés : ${res.utilisateurs_crees}\n- Mis à jour : ${res.utilisateurs_mis_a_jour}`);
       },
       error: (err) => {
         console.error(err);
@@ -172,13 +191,18 @@ export class UserListComponent implements OnInit {
   }
 
   unblock(email: string): void {
-    this.userService.unblockUser(email).subscribe({
-      next: () => {
-        alert('Utilisateur débloqué avec succès');
-        this.loadUsers();
-      },
-      error: (err) => console.error(err)
-    });
+    if (confirm(`Débloquer l'utilisateur ${email} ?`)) {
+      this.userService.unblockUser(email).subscribe({
+        next: () => {
+          alert('Utilisateur débloqué et synchronisé avec succès.');
+          this.loadUsers();
+        },
+        error: (err) => {
+          console.error('Erreur déblocage:', err);
+          alert('Erreur lors du déblocage. Vérifiez la console pour plus de détails.');
+        }
+      });
+    }
   }
 
   deleteUser(id: string): void {
