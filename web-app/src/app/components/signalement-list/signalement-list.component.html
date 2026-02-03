@@ -207,9 +207,7 @@
             </td>
             <td class="px-8 py-6">
               <div *ngIf="s.entrepriseNom" class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-black text-xs">
-                  {{ s.entrepriseNom.charAt(0) }}
-                </div>
+
                 <span class="text-xs font-bold text-slate-600">{{ s.entrepriseNom }}</span>
               </div>
               <div *ngIf="!s.entrepriseNom" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-wider italic">
