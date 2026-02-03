@@ -32,4 +32,16 @@ export class ConfigComponent implements OnInit {
       error: (err) => console.error(err)
     });
   }
+
+  syncToFirebase(): void {
+    if (confirm('Voulez-vous synchroniser ces configurations avec Firebase ?')) {
+      this.configService.syncToFirebase().subscribe({
+        next: () => alert('Configurations synchronisées avec succès !'),
+        error: (err) => {
+          console.error(err);
+          alert('Erreur lors de la synchronisation : ' + (err.error?.message || err.message));
+        }
+      });
+    }
+  }
 }

@@ -23,6 +23,7 @@ export interface AppUser {
   role?: string;
   statut?: string;
   postgresId?: string;
+  expiresAt?: string;
 }
 
 // État global simple

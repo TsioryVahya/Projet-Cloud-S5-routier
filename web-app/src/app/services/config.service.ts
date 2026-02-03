@@ -23,4 +23,8 @@ export class ConfigService {
   updateConfig(cle: string, valeur: string): Observable<any> {
     return this.http.put(`${this.apiUrl}/${cle}`, { cle, valeur });
   }
+
+  syncToFirebase(): Observable<any> {
+    return this.http.post(`${this.apiUrl}/sync-to-firebase`, {});
+  }
 }

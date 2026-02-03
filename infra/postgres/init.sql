@@ -32,6 +32,7 @@ CREATE TABLE utilisateurs (
     date_dernier_echec_connexion TIMESTAMP,
     date_deblocage_automatique TIMESTAMP,
     derniere_connexion TIMESTAMP,
+    date_derniere_modification TIMESTAMP,
     date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -135,12 +136,13 @@ INSERT INTO entreprises (nom, description) VALUES
 
 -- Insertion du compte Manager par défaut
 -- Mot de passe: manager123
-INSERT INTO utilisateurs (email, mot_de_passe, role_id, statut_actuel_id) 
+INSERT INTO utilisateurs (email, mot_de_passe, role_id, statut_actuel_id, date_derniere_modification) 
 VALUES (
     'manager@routier.mg', 
     'manager123', 
     (SELECT id FROM roles WHERE nom = 'MANAGER'),
-    (SELECT id FROM statuts_utilisateur WHERE nom = 'ACTIF')
+    (SELECT id FROM statuts_utilisateur WHERE nom = 'ACTIF'),
+    CURRENT_TIMESTAMP
 )
 ON CONFLICT (email) DO NOTHING;
 

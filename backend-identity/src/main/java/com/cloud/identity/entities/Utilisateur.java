@@ -1,6 +1,5 @@
 package com.cloud.identity.entities;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import org.hibernate.annotations.ColumnDefault;
 
@@ -9,11 +8,9 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "utilisateurs")
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Utilisateur {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @ColumnDefault("uuid_generate_v4()")
     @Column(name = "id", nullable = false)
     private UUID id;
 
@@ -43,6 +40,9 @@ public class Utilisateur {
 
     @Column(name = "derniere_connexion")
     private Instant derniereConnexion;
+
+    @Column(name = "date_derniere_modification")
+    private Instant dateDerniereModification;
 
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "date_creation")
@@ -118,6 +118,14 @@ public class Utilisateur {
 
     public void setDerniereConnexion(Instant derniereConnexion) {
         this.derniereConnexion = derniereConnexion;
+    }
+
+    public Instant getDateDerniereModification() {
+        return dateDerniereModification;
+    }
+
+    public void setDateDerniereModification(Instant dateDerniereModification) {
+        this.dateDerniereModification = dateDerniereModification;
     }
 
     public Instant getDateCreation() {

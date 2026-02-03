@@ -2,6 +2,7 @@ package com.cloud.identity.controller;
 
 import com.cloud.identity.entities.Configuration;
 import com.cloud.identity.repository.ConfigurationRepository;
+import com.cloud.identity.service.FirestoreSyncService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +16,19 @@ public class ConfigurationController {
 
     @Autowired
     private ConfigurationRepository repository;
+
+    @Autowired
+    private FirestoreSyncService syncService;
+
+    @PostMapping("/sync-to-firebase")
+    public ResponseEntity<?> syncToFirebase() {
+        try {
+            syncService.syncConfigurationsToFirestore();
+            return ResponseEntity.ok().body("{\"message\": \"Configurations synchronisées vers Firestore\"}");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
     @GetMapping
     public List<Configuration> getAll() {
