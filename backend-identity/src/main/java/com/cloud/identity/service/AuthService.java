@@ -140,6 +140,13 @@ public class AuthService {
         user.setDateDeblocageAutomatique(null);
         user.setDateDerniereModification(Instant.now());
         utilisateurRepository.save(user);
+
+        // Synchroniser automatiquement vers Firestore
+        try {
+            firestoreSyncService.syncUserToFirestore(user);
+        } catch (Exception e) {
+            System.err.println("Erreur sync auto après déblocage: " + e.getMessage());
+        }
     }
 
     @Transactional

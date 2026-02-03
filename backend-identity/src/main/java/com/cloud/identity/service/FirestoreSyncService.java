@@ -54,9 +54,26 @@ public class FirestoreSyncService {
 
             for (QueryDocumentSnapshot document : documents) {
                 String email = document.getString("email");
+                String postgresIdStr = document.getString("postgresId");
+                
                 if (email == null || email.isEmpty()) continue;
 
-                Optional<Utilisateur> userOpt = utilisateurRepository.findByEmail(email);
+                Optional<Utilisateur> userOpt = Optional.empty();
+                
+                // Priorité à l'ID Postgres pour éviter les doublons si l'email a changé
+                if (postgresIdStr != null && !postgresIdStr.isEmpty()) {
+                    try {
+                        userOpt = utilisateurRepository.findById(java.util.UUID.fromString(postgresIdStr));
+                    } catch (Exception e) {
+                        System.err.println("ID Postgres invalide dans Firestore: " + postgresIdStr);
+                    }
+                }
+                
+                // Si non trouvé par ID, on cherche par email
+                if (userOpt.isEmpty()) {
+                    userOpt = utilisateurRepository.findByEmail(email);
+                }
+
                 Utilisateur user;
                 boolean isNew = false;
 
@@ -77,11 +94,21 @@ public class FirestoreSyncService {
                     }
                 } else {
                     user = new Utilisateur();
+                    // Si on a un postgresIdStr mais qu'il n'existe pas en base, on peut soit l'ignorer, 
+                    // soit le créer avec cet ID. Ici on le crée avec cet ID si possible.
+                    if (postgresIdStr != null && !postgresIdStr.isEmpty()) {
+                        try {
+                            user.setId(java.util.UUID.fromString(postgresIdStr));
+                        } catch (Exception e) {}
+                    }
                     user.setEmail(email);
                     user.setDateCreation(java.time.Instant.now());
                     user.setRole(roleRepository.findByNom("UTILISATEUR").orElse(null));
                     isNew = true;
                 }
+
+                // Mettre à jour l'email au cas où il aurait changé
+                user.setEmail(email);
 
                 // Synchroniser le mot de passe si présent
                 if (document.getString("motDePasse") != null) {
@@ -170,8 +197,8 @@ public class FirestoreSyncService {
             data.put("derniereConnexion", user.getDerniereConnexion() != null ? user.getDerniereConnexion().toString() : null);
             data.put("date_derniere_modification", user.getDateDerniereModification() != null ? com.google.cloud.Timestamp.of(java.sql.Timestamp.from(user.getDateDerniereModification())) : null);
 
-            // Utiliser l'email comme ID de document dans Firestore
-            usersCol.document(user.getEmail()).set(data).get();
+            // Utiliser l'ID Postgres comme ID de document dans Firestore pour éviter les doublons si l'email change
+            usersCol.document(user.getId().toString()).set(data).get();
         } catch (Exception e) {
             System.err.println("Erreur lors de la synchronisation de l'utilisateur " + user.getEmail() + " vers Firestore : " + e.getMessage());
         }

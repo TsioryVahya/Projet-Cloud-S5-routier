@@ -58,15 +58,35 @@ public class UtilisateurController {
 
     @PostMapping
     public Utilisateur create(@RequestBody Utilisateur entity) {
-        return repository.save(entity);
+        if (entity.getDateDerniereModification() == null) {
+            entity.setDateDerniereModification(java.time.Instant.now());
+        }
+        Utilisateur saved = repository.save(entity);
+        try {
+            syncService.syncUserToFirestore(saved);
+        } catch (Exception e) {}
+        return saved;
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Utilisateur> update(@PathVariable UUID id, @RequestBody Utilisateur entity) {
-        if (!repository.existsById(id)) return ResponseEntity.notFound().build();
-        entity.setId(id);
-        entity.setDateDerniereModification(java.time.Instant.now());
-        return ResponseEntity.ok(repository.save(entity));
+        Utilisateur existingUser = repository.findById(id).orElse(null);
+        if (existingUser == null) return ResponseEntity.notFound().build();
+        
+        // Mettre à jour les champs de l'objet existant au lieu de sauvegarder l'objet reçu
+        existingUser.setEmail(entity.getEmail());
+        if (entity.getMotDePasse() != null && !entity.getMotDePasse().isEmpty()) {
+            existingUser.setMotDePasse(entity.getMotDePasse());
+        }
+        existingUser.setRole(entity.getRole());
+        existingUser.setStatutActuel(entity.getStatutActuel());
+        existingUser.setDateDerniereModification(java.time.Instant.now());
+        
+        Utilisateur saved = repository.save(existingUser);
+        try {
+            syncService.syncUserToFirestore(saved);
+        } catch (Exception e) {}
+        return ResponseEntity.ok(saved);
     }
 
     @DeleteMapping("/{id}")

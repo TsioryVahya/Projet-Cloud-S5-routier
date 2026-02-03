@@ -178,7 +178,7 @@ export class UserListComponent implements OnInit {
     if (confirm(`Débloquer l'utilisateur ${email} ?`)) {
       this.userService.unblockUser(email).subscribe({
         next: () => {
-          alert('Utilisateur débloqué localement avec succès. N\'oubliez pas de synchroniser avec Firebase pour appliquer le changement sur le mobile.');
+          alert('Utilisateur débloqué et synchronisé avec succès.');
           this.loadUsers();
         },
         error: (err) => {
