@@ -35,6 +35,9 @@ public class SignalementDTO {
     @com.google.cloud.firestore.annotation.PropertyName("utilisateur_id")
     private String utilisateurId;
 
+    @com.google.cloud.firestore.annotation.PropertyName("id_type_signalement")
+    private Integer idTypeSignalement;
+
     private UtilisateurDTO utilisateur;
 
     public static class UtilisateurDTO {
@@ -205,5 +208,15 @@ public class SignalementDTO {
     @com.google.cloud.firestore.annotation.PropertyName("utilisateur_id")
     public void setUtilisateurId(String utilisateurId) {
         this.utilisateurId = utilisateurId;
+    }
+
+    @com.google.cloud.firestore.annotation.PropertyName("id_type_signalement")
+    public Integer getIdTypeSignalement() {
+        return idTypeSignalement;
+    }
+
+    @com.google.cloud.firestore.annotation.PropertyName("id_type_signalement")
+    public void setIdTypeSignalement(Integer idTypeSignalement) {
+        this.idTypeSignalement = idTypeSignalement;
     }
 }

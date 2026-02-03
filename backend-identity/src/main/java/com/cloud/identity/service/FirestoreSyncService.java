@@ -383,6 +383,9 @@ public class FirestoreSyncService {
                 Double longitude = document.getDouble("longitude");
                 String description = document.getString("description");
                 String statutNom = document.getString("statut");
+                
+                // Gérer le type (ID numérique ou Nom)
+                Long typeIdLong = document.getLong("id_type_signalement");
                 String typeNom = document.getString("type");
                 if (typeNom == null) typeNom = document.getString("type_nom");
 
@@ -456,7 +459,11 @@ public class FirestoreSyncService {
                         }));
 
                 // Gérer le type
-                if (typeNom != null && !typeNom.isEmpty()) {
+                if (typeIdLong != null) {
+                    // Priorité 1 : Recherche par ID (nouveau format numérique)
+                    typeSignalementRepository.findById(typeIdLong.intValue()).ifPresent(s::setType);
+                } else if (typeNom != null && !typeNom.isEmpty()) {
+                    // Priorité 2 : Recherche par Nom (ancien format texte)
                     final String finalTypeNom = typeNom;
                     typeSignalementRepository.findByNom(finalTypeNom).ifPresent(s::setType);
                 }

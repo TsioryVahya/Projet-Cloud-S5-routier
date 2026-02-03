@@ -85,11 +85,16 @@
         </div>
       </div>
 
-      <!-- Instructions pour signaler (Visiteur uniquement) -->
-      <div v-if="!newSignalementPoint && !store.user" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 text-center">
-        <div class="bg-blue-600/90 backdrop-blur-sm text-white px-6 py-3 rounded-full text-xs font-bold shadow-2xl animate-bounce">
-          Connectez-vous pour signaler
-        </div>
+
+      <!-- Bouton GPS -->
+      <div class="absolute bottom-24 right-4 z-20">
+        <button 
+          @click="locateUser" 
+          :class="isLocating ? 'bg-blue-600 text-white' : 'bg-white text-blue-600'"
+          class="w-11 h-11 rounded-xl shadow-2xl flex items-center justify-center active:scale-95 transition-all border border-slate-100"
+        >
+          <ion-icon :icon="locateOutline" class="text-xl" />
+        </button>
       </div>
 
       <!-- Modal de Signalement Rapide -->
@@ -104,9 +109,58 @@
           </div>
           <div class="p-6 space-y-4">
             <div>
-              <label class="block text-xs font-bold text-slate-400 uppercase mb-2 ml-1">Description</label>
-              <textarea v-model="reportDescription" rows="2" placeholder="Ex: Nid de poule profond, route inondée..." class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-700 text-sm resize-none"></textarea>
+              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Description</label>
+              <textarea v-model="reportDescription" rows="3" placeholder="Décrivez le problème..." class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 resize-none"></textarea>
             </div>
+
+            <!-- Sélection du type de signalement -->
+            <div>
+              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 ml-1">Type de problème</label>
+              <div class="relative group">
+                <!-- Boutons de navigation -->
+                <button 
+                  @click="scrollCarousel('left')"
+                  class="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 backdrop-blur-sm p-1 rounded-full shadow-md text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <ion-icon :icon="chevronBackOutline" />
+                </button>
+                
+                <div 
+                  ref="carouselRef"
+                  class="flex gap-3 overflow-x-auto no-scrollbar scroll-smooth pb-2 px-1"
+                >
+                  <div 
+                    v-for="type in typesSignalement" 
+                    :key="type.id"
+                    @click="selectedTypeId = type.id"
+                    :class="[
+                      'flex-shrink-0 w-28 h-28 rounded-2xl p-3 flex flex-col items-center justify-between cursor-pointer transition-all border-2',
+                      selectedTypeId === type.id ? 'border-blue-500 scale-95 shadow-inner' : 'border-transparent bg-slate-50'
+                    ]"
+                  >
+                    <div 
+                      class="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm"
+                      :style="{ backgroundColor: type.couleur + '20' }"
+                    >
+                      <svg viewBox="0 0 24 24" class="w-7 h-7" :style="{ fill: type.couleur }">
+                        <path :d="type.icone_path" />
+                      </svg>
+                    </div>
+                    <span class="text-[10px] font-bold text-center leading-tight text-slate-700 uppercase tracking-tighter line-clamp-2">
+                      {{ type.nom }}
+                    </span>
+                  </div>
+                </div>
+
+                <button 
+                  @click="scrollCarousel('right')"
+                  class="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 backdrop-blur-sm p-1 rounded-full shadow-md text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <ion-icon :icon="chevronForwardOutline" />
+                </button>
+              </div>
+            </div>
+
             <div>
               <label class="block text-xs font-bold text-slate-400 uppercase mb-2 ml-1">Photo</label>
               <div v-if="!reportPhotoUrl" @click="takePhoto" class="w-full h-32 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-400 gap-2 cursor-pointer hover:bg-slate-100 hover:border-blue-200 transition-colors">
@@ -141,6 +195,15 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue';
 import { IonPage, IonContent, IonIcon } from '@ionic/vue';
+
+interface TypeSignalement {
+  id: number;
+  nom: string;
+  description: string;
+  icone_path: string;
+  couleur: string;
+}
+
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { 
   logOutOutline, 
@@ -151,6 +214,9 @@ import {
   trailSignOutline,
   eyeOutline,
   locationOutline,
+  locateOutline,
+  chevronBackOutline,
+  chevronForwardOutline,
   cameraOutline,
   trashOutline
 } from 'ionicons/icons';
@@ -173,10 +239,14 @@ const isAuthLoading = ref(false);
 const newSignalementPoint = ref<{lat: number, lng: number} | null>(null);
 const reportDescription = ref('');
 const reportPhotoUrl = ref('');
+const selectedTypeId = ref<number | null>(null);
+const typesSignalement = ref<TypeSignalement[]>([]);
 const isSubmitting = ref(false);
+const isLocating = ref(false);
 
 let map: L.Map | null = null;
 const markersMap = new Map<string, L.Marker>();
+let userLocationMarker: L.LayerGroup | null = null;
 
 const filteredSignalements = computed(() => {
   if (filterMine.value && store.user) {
@@ -302,6 +372,10 @@ const initMap = () => {
 
 const submitReport = async () => {
   if (!newSignalementPoint.value || !store.user) return;
+  if (!selectedTypeId.value) {
+    alert("Veuillez sélectionner un type de signalement");
+    return;
+  }
   
   isSubmitting.value = true;
   try {
@@ -311,6 +385,7 @@ const submitReport = async () => {
       description: reportDescription.value,
       photo_url: reportPhotoUrl.value,
       utilisateur_id: store.user.postgresId,
+      id_type_signalement: selectedTypeId.value,
       statut: 'nouveau',
       entreprise: null,
       dateSignalement: new Date().toISOString(),
@@ -319,15 +394,84 @@ const submitReport = async () => {
 
     const docRef = await addDoc(collection(db, 'signalements'), reportData);
 
-    
-
     newSignalementPoint.value = null;
     reportDescription.value = '';
     reportPhotoUrl.value = '';
+    selectedTypeId.value = null;
   } catch (err) {
     console.error(err);
   } finally {
     isSubmitting.value = false;
+  }
+};
+
+const locateUser = () => {
+  if (!map) return;
+  
+  if (isLocating.value) {
+    // Dézoomer en état normal (Tana par défaut)
+    const tana = { lat: -18.8792, lng: 47.5079 };
+    map.setView([tana.lat, tana.lng], 13);
+    
+    // Nettoyer le marqueur
+    if (userLocationMarker) {
+      map.removeLayer(userLocationMarker);
+      userLocationMarker = null;
+    }
+    isLocating.value = false;
+    return;
+  }
+  
+  if ("geolocation" in navigator) {
+    isLocating.value = true;
+    navigator.geolocation.getCurrentPosition((position) => {
+      const { latitude, longitude } = position.coords;
+      
+      // Zoomer sur la position
+      map?.setView([latitude, longitude], 16);
+      
+      // Nettoyer l'ancien marqueur s'il existe
+      if (userLocationMarker) {
+        map?.removeLayer(userLocationMarker);
+      }
+      
+      // Créer un nouveau groupe pour le marqueur de position
+      userLocationMarker = L.layerGroup().addTo(map!);
+      
+      // Ajouter un cercle d'incertitude
+      L.circle([latitude, longitude], {
+        color: '#3b82f6',
+        fillColor: '#3b82f6',
+        fillOpacity: 0.15,
+        radius: 100,
+        weight: 1
+      }).addTo(userLocationMarker);
+      
+      // Ajouter le point bleu
+      L.circleMarker([latitude, longitude], {
+        radius: 8,
+        fillColor: "#3b82f6",
+        color: "#fff",
+        weight: 3,
+        opacity: 1,
+        fillOpacity: 1
+      }).addTo(userLocationMarker);
+      
+    }, (error) => {
+      isLocating.value = false;
+      console.error("Erreur de géolocalisation:", error);
+      let message = "Impossible de vous localiser";
+      if (error.code === error.PERMISSION_DENIED) {
+        message = "Permission de géolocalisation refusée";
+      }
+      alert(message);
+    }, {
+      enableHighAccuracy: true,
+      timeout: 5000,
+      maximumAge: 0
+    });
+  } else {
+    alert("La géolocalisation n'est pas supportée par votre appareil");
   }
 };
 
@@ -385,10 +529,33 @@ watch(() => filterMine.value, () => {
   updateMarkers();
 });
 
+const fetchTypesSignalement = async () => {
+  try {
+    const q = query(collection(db, 'types_signalement'));
+    const querySnapshot = await getDocs(q);
+    typesSignalement.value = querySnapshot.docs.map(doc => ({
+      ...doc.data()
+    } as TypeSignalement)).sort((a, b) => a.id - b.id);
+  } catch (err) {
+    console.error('Erreur lors de la récupération des types:', err);
+  }
+};
+
+const carouselRef = ref<HTMLElement | null>(null);
+const scrollCarousel = (direction: 'left' | 'right') => {
+  if (!carouselRef.value) return;
+  const scrollAmount = 150;
+  carouselRef.value.scrollBy({
+    left: direction === 'left' ? -scrollAmount : scrollAmount,
+    behavior: 'smooth'
+  });
+};
+
 onMounted(() => {
   setTimeout(() => {
     initMap();
     updateMarkers(); // Initial render if data already exists
+    fetchTypesSignalement();
   }, 100);
 });
 </script>
