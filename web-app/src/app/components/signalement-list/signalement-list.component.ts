@@ -230,6 +230,14 @@ export class SignalementListComponent implements OnInit {
     return 'bg-green-50 text-green-600 border-green-100 focus:ring-green-500';
   }
 
+  getProgressByStatus(status: string): number {
+    const s = String(status || '').toLowerCase();
+    if (s === 'nouveau') return 0;
+    if (s === 'en cours' || s === 'en_cours') return 50;
+    if (s === 'terminé' || s === 'termine') return 100;
+    return 0;
+  }
+
   deleteSignalement(id: string | undefined): void {
     if (!id) return;
     if (confirm('Êtes-vous sûr de vouloir supprimer ce signalement ?')) {

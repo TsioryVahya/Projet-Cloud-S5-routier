@@ -46,9 +46,9 @@ public class AuthController {
     public ResponseEntity<?> unblock(@RequestBody Map<String, String> data) {
         try {
             authService.unblockUser(data.get("email"));
-            return ResponseEntity.ok("Utilisateur débloqué");
+            return ResponseEntity.ok(Map.of("message", "Utilisateur débloqué"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 }

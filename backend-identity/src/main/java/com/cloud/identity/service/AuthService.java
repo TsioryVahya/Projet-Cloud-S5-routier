@@ -31,6 +31,9 @@ public class AuthService {
     @Autowired
     private ConfigurationRepository configurationRepository;
 
+    @Autowired
+    private FirestoreSyncService firestoreSyncService;
+
     @Transactional
     public Optional<Session> login(String email, String password) {
         return login(email, password, null, null);
@@ -93,7 +96,7 @@ public class AuthService {
     }
 
     private Session createSession(Utilisateur user, String ip, String ua) {
-        int dureeHeures = Integer.parseInt(getConfig("duree_session_heures", "24"));
+        double dureeHeures = Double.parseDouble(getConfig("duree_session_heures", "24"));
         
         Session session = new Session();
         session.setUtilisateur(user);
@@ -101,7 +104,7 @@ public class AuthService {
         session.setRefreshToken(UUID.randomUUID().toString());
         session.setIpConnexion(ip);
         session.setUserAgent(ua);
-        session.setDateExpiration(Instant.now().plusSeconds(dureeHeures * 3600));
+        session.setDateExpiration(Instant.now().plusSeconds((long)(dureeHeures * 3600)));
         return sessionRepository.save(session);
     }
 
@@ -115,6 +118,7 @@ public class AuthService {
         StatutUtilisateur bloque = statutRepository.findByNom("BLOQUE")
                 .orElseThrow(() -> new RuntimeException("Statut BLOQUE non trouvé"));
         user.setStatutActuel(bloque);
+        user.setDateDerniereModification(Instant.now());
         
         int minutesBlocage = Integer.parseInt(getConfig("duree_blocage_minutes", "15"));
         user.setDateDeblocageAutomatique(Instant.now().plusSeconds(minutesBlocage * 60));
@@ -122,6 +126,7 @@ public class AuthService {
 
     @Transactional
     public void unblockUser(String email) {
+        System.out.println("🔓 Déblocage manuel de l'utilisateur : " + email);
         Utilisateur user = utilisateurRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
         unblockUser(user);
@@ -133,7 +138,15 @@ public class AuthService {
         user.setStatutActuel(actif);
         user.setTentativesConnexion(0);
         user.setDateDeblocageAutomatique(null);
+        user.setDateDerniereModification(Instant.now());
         utilisateurRepository.save(user);
+
+        // Synchroniser automatiquement vers Firestore
+        try {
+            firestoreSyncService.syncUserToFirestore(user);
+        } catch (Exception e) {
+            System.err.println("Erreur sync auto après déblocage: " + e.getMessage());
+        }
     }
 
     @Transactional
@@ -154,6 +167,7 @@ public class AuthService {
             user.setStatutActuel(defaultStatut);
         }
         
+        user.setDateDerniereModification(Instant.now());
         return utilisateurRepository.save(user);
     }
 }

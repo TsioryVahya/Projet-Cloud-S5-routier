@@ -44,6 +44,11 @@ public class UtilisateurController {
         return repository.findAll();
     }
 
+    @GetMapping("/blocked")
+    public List<Utilisateur> getBlocked() {
+        return repository.findByStatutActuelNom("BLOQUE");
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Utilisateur> getById(@PathVariable UUID id) {
         return repository.findById(id)
@@ -53,48 +58,35 @@ public class UtilisateurController {
 
     @PostMapping
     public Utilisateur create(@RequestBody Utilisateur entity) {
+        if (entity.getDateDerniereModification() == null) {
+            entity.setDateDerniereModification(java.time.Instant.now());
+        }
         Utilisateur saved = repository.save(entity);
-        // Synchroniser immédiatement vers Firebase
-        syncService.syncSingleUserToFirestore(saved);
+        try {
+            syncService.syncUserToFirestore(saved);
+        } catch (Exception e) {}
         return saved;
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Utilisateur> update(@PathVariable UUID id, @RequestBody Utilisateur entity) {
-        return repository.findById(id).map(existingUser -> {
-            String oldEmail = existingUser.getEmail();
-            existingUser.setEmail(entity.getEmail());
-
-            // Ne mettre à jour le mot de passe que s'il est fourni et non vide
-            if (entity.getMotDePasse() != null && !entity.getMotDePasse().trim().isEmpty()) {
-                existingUser.setMotDePasse(entity.getMotDePasse());
-            }
-
-            if (entity.getRole() != null) {
-                existingUser.setRole(entity.getRole());
-            }
-
-            if (entity.getStatutActuel() != null) {
-                existingUser.setStatutActuel(entity.getStatutActuel());
-            }
-
-            Utilisateur updated = repository.save(existingUser);
-
-            // Si l'email a changé, on gère la cascade dans Firestore
-            if (!oldEmail.equals(updated.getEmail())) {
-                // 1. Supprimer l'ancien document utilisateur (ID était l'email auparavant)
-                syncService.deleteUserInFirestore(oldEmail);
-
-                // 2. Mettre à jour l'email dans tous les signalements de cet utilisateur
-                syncService.updateEmailInFirestoreSignalements(oldEmail, updated.getEmail());
-            }
-
-            // Synchroniser immédiatement vers Firebase pour éviter le bug de "retour
-            // arrière"
-            syncService.syncSingleUserToFirestore(updated);
-
-            return ResponseEntity.ok(updated);
-        }).orElse(ResponseEntity.notFound().build());
+        Utilisateur existingUser = repository.findById(id).orElse(null);
+        if (existingUser == null) return ResponseEntity.notFound().build();
+        
+        // Mettre à jour les champs de l'objet existant au lieu de sauvegarder l'objet reçu
+        existingUser.setEmail(entity.getEmail());
+        if (entity.getMotDePasse() != null && !entity.getMotDePasse().isEmpty()) {
+            existingUser.setMotDePasse(entity.getMotDePasse());
+        }
+        existingUser.setRole(entity.getRole());
+        existingUser.setStatutActuel(entity.getStatutActuel());
+        existingUser.setDateDerniereModification(java.time.Instant.now());
+        
+        Utilisateur saved = repository.save(existingUser);
+        try {
+            syncService.syncUserToFirestore(saved);
+        } catch (Exception e) {}
+        return ResponseEntity.ok(saved);
     }
 
     @DeleteMapping("/{id}")

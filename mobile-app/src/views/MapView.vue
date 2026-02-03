@@ -222,7 +222,17 @@ import {
 } from 'ionicons/icons';
 import * as L from 'leaflet';
 import { db } from '../firebase/config';
-import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { 
+  collection, 
+  addDoc, 
+  serverTimestamp, 
+  query, 
+  where, 
+  getDocs,
+  doc,
+  getDoc,
+  updateDoc
+} from 'firebase/firestore';
 import { store, setUser } from '../store';
 
 // UI State
@@ -287,24 +297,36 @@ const handleLogin = async () => {
   isAuthLoading.value = true;
   authError.value = "";
   try {
-    // On cherche l'utilisateur dans la collection "utilisateurs" de Firestore
-    const q = query(
-      collection(db, 'utilisateurs'), 
-      where('email', '==', loginEmail.value.trim()),
-      where('motDePasse', '==', loginPassword.value.trim())
-    );
-    
+    const email = loginEmail.value.trim();
+    const password = loginPassword.value.trim();
+
+    // 1. Récupérer la configuration de la limite (max_tentatives_connexion)
+    const configDoc = await getDoc(doc(db, 'configurations', 'max_tentatives_connexion'));
+    const maxTentatives = configDoc.exists() ? parseInt(configDoc.data().valeur) : 3;
+
+    // 2. Chercher l'utilisateur dans Firestore
+    // On cherche par email dans tous les documents car l'ID du document est maintenant l'UUID Postgres
+    const usersRef = collection(db, 'utilisateurs');
+    const q = query(usersRef, where('email', '==', email));
     const querySnapshot = await getDocs(q);
-    
+
     if (querySnapshot.empty) {
       authError.value = "Email ou mot de passe incorrect";
       return;
     }
 
     const userDoc = querySnapshot.docs[0];
+    const userDocRef = userDoc.ref;
     const userData = userDoc.data();
-    
-    // Vérifier si le compte est bloqué
+
+    console.log("Utilisateur trouvé dans Firestore:", userData.email);
+    console.log("MDP Firestore:", userData.motDePasse, "| MDP saisi:", password);
+
+    // 2.5 Récupérer la durée de session (duree_session_heures)
+    const sessionConfigDoc = await getDoc(doc(db, 'configurations', 'duree_session_heures'));
+    const dureeHeures = sessionConfigDoc.exists() ? parseFloat(sessionConfigDoc.data().valeur) : 24;
+
+    // 3. Vérifier si le compte est bloqué
     if (userData.statut === 'BLOQUE') {
       authError.value = "Votre compte est bloqué. Contactez un administrateur.";
       return;
@@ -316,16 +338,50 @@ const handleLogin = async () => {
       statut: userData.statut,
       postgresId: userData.id // On utilise le champ 'id' de Firestore qui contient le UUID
     };
+    // 4. Vérifier le mot de passe
+    if (userData.motDePasse === password) {
+      // Succès : réinitialiser les tentatives
+      await updateDoc(userDocRef, {
+        tentatives_connexion: 0,
+        derniereConnexion: new Date().toISOString()
+      });
 
-    setUser(appUser);
-    localStorage.setItem('app_user', JSON.stringify(appUser));
-    
-    showLoginModal.value = false;
-    loginEmail.value = '';
-    loginPassword.value = '';
-  } catch (err: any) {
-    console.error('Erreur Auth:', err);
-    authError.value = "Une erreur est survenue lors de la connexion";
+      const expiresAt = new Date(Date.now() + dureeHeures * 3600 * 1000).toISOString();
+
+      const appUser = {
+        email: userData.email,
+        role: userData.role,
+        statut: userData.statut,
+        postgresId: userData.postgresId,
+        expiresAt: expiresAt
+      };
+
+      setUser(appUser);
+      localStorage.setItem('app_user', JSON.stringify(appUser));
+      
+      showLoginModal.value = false;
+      loginEmail.value = '';
+      loginPassword.value = '';
+    } else {
+      // Échec : incrémenter les tentatives
+      const nouvellesTentatives = (userData.tentatives_connexion || 0) + 1;
+      
+      const updates: any = {
+        tentatives_connexion: nouvellesTentatives
+      };
+
+      if (nouvellesTentatives >= maxTentatives) {
+        updates.statut = 'BLOQUE';
+        authError.value = `Compte bloqué après ${nouvellesTentatives} tentatives infructueuses.`;
+      } else {
+        authError.value = `Email ou mot de passe incorrect (${nouvellesTentatives}/${maxTentatives} tentatives)`;
+      }
+
+      await updateDoc(userDocRef, updates);
+    }
+  } catch (e: any) {
+    console.error('Erreur Auth Firestore:', e);
+    authError.value = "Une erreur est survenue lors de l'authentification";
   } finally {
     isAuthLoading.value = false;
   }
