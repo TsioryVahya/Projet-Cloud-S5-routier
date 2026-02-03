@@ -1,0 +1,15 @@
+Module Authentification
+• On utilise Firebase s’il y a une connexion
+Internet ou une Base local (postgres) dans
+docker (si pas de connexion)
+• Ci-dessous les fonctionnalités minimales
+– Authentification (email/pwd)
+– Inscription
+– Modification infos users
+• Ci-dessous les fonctionnalités minimales
+– Durée de vie des sessions
+– Limite des nombres ( paramétrable, par défaut 3 )
+de tentatives de connexion pour un compte
+• Un API REST peut réinitialiser le blocage pour un
+utilisateur donné
+– Documentation API via Swagger

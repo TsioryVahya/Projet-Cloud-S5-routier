@@ -1,0 +1,107 @@
+/* Map Base */
+#map {
+  height: 100%;
+  width: 100%;
+  background-color: #020617; /* slate-950 */
+}
+
+/* Custom Leaflet Overrides for Immersive Design */
+::ng-deep .leaflet-container {
+  background: #020617 !important;
+}
+
+::ng-deep .leaflet-popup-content-wrapper {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(12px) !important;
+  border-radius: 1.25rem !important;
+  padding: 0 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+::ng-deep .minimal-popup .leaflet-popup-content {
+  margin: 0 !important;
+  width: auto !important;
+}
+
+::ng-deep .leaflet-popup-tip {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+/* Custom Marker Interactions */
+::ng-deep .custom-div-icon {
+  background: none !important;
+  border: none !important;
+}
+
+::ng-deep .marker-container {
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+::ng-deep .marker-selected .pin-svg {
+  transform: scale(1.4) translateY(-4px);
+  filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.6));
+}
+
+::ng-deep .marker-selected .ping-animation {
+  width: 60px !important;
+  height: 60px !important;
+  opacity: 0.4 !important;
+}
+
+/* Scrollbar Styling */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}
+
+/* Leaflet Control Styling */
+::ng-deep .leaflet-control-zoom {
+  border: none !important;
+  margin-right: 24px !important;
+  margin-bottom: 120px !important; /* Move up for the legend */
+}
+
+::ng-deep .leaflet-control-zoom-in, 
+::ng-deep .leaflet-control-zoom-out {
+  background: rgba(15, 23, 42, 0.8) !important;
+  backdrop-filter: blur(8px) !important;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  width: 44px !important;
+  height: 44px !important;
+  line-height: 44px !important;
+  border-radius: 12px !important;
+  margin-bottom: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+::ng-deep .leaflet-control-zoom-in:hover, 
+::ng-deep .leaflet-control-zoom-out:hover {
+  background: #3b82f6 !important;
+  transform: scale(1.05);
+}
+
+/* AI Sparkle Animation */
+@keyframes sparkle {
+  0% { transform: scale(1) rotate(0deg); opacity: 0.5; }
+  50% { transform: scale(1.2) rotate(180deg); opacity: 1; }
+  100% { transform: scale(1) rotate(360deg); opacity: 0.5; }
+}
+
+.ai-sparkle {
+  animation: sparkle 3s infinite linear;
+}

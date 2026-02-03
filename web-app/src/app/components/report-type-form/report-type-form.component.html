@@ -1,0 +1,125 @@
+<div class="max-w-4xl mx-auto space-y-6">
+  <!-- Header -->
+  <div class="flex items-center justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+    <div class="flex items-center gap-4">
+      <a routerLink="/dashboard/types-signalement" class="p-2 hover:bg-slate-50 rounded-xl text-slate-400 transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+      </a>
+      <div>
+        <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ isEditMode ? 'Modifier' : 'Nouveau' }} Type de Signalement</h1>
+        <p class="text-slate-500 text-sm mt-1">Configurez les détails du type de signalement</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Form -->
+    <div class="lg:col-span-2">
+      <form [formGroup]="reportTypeForm" (ngSubmit)="onSubmit()" class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 space-y-6">
+        <!-- Nom -->
+        <div>
+          <label class="block text-sm font-black text-slate-700 uppercase tracking-wider mb-2">Nom du Type</label>
+          <input type="text" formControlName="nom"
+                 class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
+                 placeholder="Ex: Nid de poule, Éclairage défectueux...">
+          <div *ngIf="reportTypeForm.get('nom')?.touched && reportTypeForm.get('nom')?.invalid" class="text-red-500 text-xs mt-1 font-bold">
+            Le nom est requis (min. 3 caractères).
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label class="block text-sm font-black text-slate-700 uppercase tracking-wider mb-2">Description</label>
+          <textarea formControlName="description" rows="3"
+                    class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all resize-none"
+                    placeholder="Décrivez brièvement ce type de signalement..."></textarea>
+          <div *ngIf="reportTypeForm.get('description')?.touched && reportTypeForm.get('description')?.invalid" class="text-red-500 text-xs mt-1 font-bold">
+            La description est requise.
+          </div>
+        </div>
+
+        <!-- Couleur -->
+        <div>
+          <label class="block text-sm font-black text-slate-700 uppercase tracking-wider mb-2">Couleur Distinctive</label>
+          <div class="relative">
+            <select formControlName="couleur" 
+                    class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all appearance-none bg-white">
+              <option *ngFor="let color of predefinedColors" [value]="color.hex">
+                {{ color.name }} ({{ color.hex }})
+              </option>
+            </select>
+            <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none flex items-center gap-2">
+              <div class="w-4 h-4 rounded-full border border-slate-200" [style.background-color]="reportTypeForm.get('couleur')?.value"></div>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Icône SVG -->
+        <div>
+          <label class="block text-sm font-black text-slate-700 uppercase tracking-wider mb-2">Code SVG de l'Icône</label>
+          <textarea formControlName="iconePath" rows="5"
+                    class="w-full px-4 py-3 rounded-xl border border-slate-200 font-mono text-xs focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all resize-none"
+                    placeholder="<svg ...>...</svg>"></textarea>
+          <p class="text-[10px] text-slate-400 mt-2 italic">Collez ici le code SVG de l'icône (recommandé: 24x24px, stroke-width="2")</p>
+          <div *ngIf="reportTypeForm.get('iconePath')?.touched && reportTypeForm.get('iconePath')?.invalid" class="text-red-500 text-xs mt-1 font-bold">
+            Le code SVG de l'icône est requis.
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="pt-6 flex gap-4">
+          <button type="button" routerLink="/dashboard/types-signalement"
+                  class="flex-1 px-6 py-4 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all active:scale-95">
+            Annuler
+          </button>
+          <button type="submit" [disabled]="reportTypeForm.invalid || submitting"
+                  class="flex-[2] px-6 py-4 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-blue-600/20 active:scale-95 flex items-center justify-center gap-2">
+            <span *ngIf="submitting" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+            {{ submitting ? 'Enregistrement...' : (isEditMode ? 'Mettre à jour' : 'Créer le type') }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Preview Card -->
+    <div class="lg:col-span-1 space-y-6">
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 sticky top-6">
+        <h3 class="text-sm font-black text-slate-700 uppercase tracking-wider mb-6">Aperçu en Temps Réel</h3>
+        
+        <div class="bg-slate-50 rounded-2xl p-8 flex flex-col items-center text-center group">
+          <div class="p-6 rounded-2xl shadow-xl transition-all duration-500 flex items-center justify-center text-white mb-6"
+               [style.background-color]="reportTypeForm.get('couleur')?.value">
+            <div class="w-12 h-12 flex items-center justify-center" [innerHTML]="previewIcon"></div>
+          </div>
+          
+          <h4 class="text-xl font-black text-slate-800 break-all">{{ reportTypeForm.get('nom')?.value || 'Nom du Type' }}</h4>
+          <p class="text-slate-500 mt-3 text-sm leading-relaxed line-clamp-3">{{ reportTypeForm.get('description')?.value || 'La description s\'affichera ici...' }}</p>
+          
+          <div class="w-full mt-8 pt-6 border-t border-slate-200 flex justify-between items-center">
+            <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Couleur</span>
+            <div class="flex items-center gap-2">
+              <span class="font-mono text-xs font-bold text-slate-600">{{ reportTypeForm.get('couleur')?.value }}</span>
+              <div class="w-3 h-3 rounded-full" [style.background-color]="reportTypeForm.get('couleur')?.value"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
+          <div class="flex gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p class="text-xs text-blue-700 leading-relaxed">
+              L'aperçu montre comment le type de signalement apparaîtra dans la liste et sur la carte interactive.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

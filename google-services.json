@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "792049548362",
+    "project_id": "projet-cloud-s5-routier",
+    "storage_bucket": "projet-cloud-s5-routier.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:792049548362:android:6ab3ce65b1584730c63ab3",
+        "android_client_info": {
+          "package_name": "com.company.projetCloud"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBroRMMRCSVdqAzpuivp7PSSP9X1WIk3VY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,6 +1,6 @@
 package com.cloud.identity.controller;
 
-import com.cloud.identity.model.Utilisateur;
+import com.cloud.identity.entities.Utilisateur;
 import com.cloud.identity.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -22,9 +22,12 @@ public class AuthController {
         String password = credentials.get("password");
         
         try {
-            return authService.login(email, password)
-                    .map(user -> ResponseEntity.ok(user))
-                    .orElse(ResponseEntity.status(401).body("Identifiants incorrects"));
+            var result = authService.login(email, password);
+            if (result.isPresent()) {
+                return ResponseEntity.ok(result.get());
+            } else {
+                return ResponseEntity.status(401).body("Identifiants incorrects");
+            }
         } catch (Exception e) {
             return ResponseEntity.status(403).body(e.getMessage());
         }

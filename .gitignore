@@ -1,0 +1,29 @@
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# Build directories
+backend-identity/target/
+web-app/dist/
+web-app/.angular/
+mobile-app/dist/
+mobile-app/node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+backend-identity/logs.txt
+
+# Temp
+.docker_temp_*
+
+# Secrets
+backend-identity/src/main/resources/serviceAccountKey.json
+google-services.json
+*.p12
+*.jks
+

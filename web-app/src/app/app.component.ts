@@ -1,17 +1,22 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet } from '@angular/router';
+import { RouterOutlet, RouterLink } from '@angular/router';
+import { AuthService } from './services/auth.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet],
+  imports: [CommonModule, RouterOutlet, RouterLink],
   template: `
-    <h1>Bienvenue sur l'application de signalement routier</h1>
     <router-outlet></router-outlet>
   `,
-  styles: [],
+  styles: [`
+    :host {
+      display: block;
+      height: 100vh;
+    }
+  `],
 })
 export class AppComponent {
-  title = 'web-app';
+  authService = inject(AuthService);
 }
