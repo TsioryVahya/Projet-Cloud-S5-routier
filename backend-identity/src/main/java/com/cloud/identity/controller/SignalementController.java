@@ -37,8 +37,13 @@ public class SignalementController {
     }
 
     @GetMapping
-    public List<SignalementDTO> getAll() {
-        return signalementService.getAllSignalements();
+    public ResponseEntity<?> getAll() {
+        try {
+            return ResponseEntity.ok(signalementService.getAllSignalements());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Unknown error", "type", e.getClass().getName()));
+        }
     }
 
     @GetMapping("/{id}")
@@ -65,10 +70,14 @@ public class SignalementController {
             
             String photoUrl = data.get("photoUrl") != null ? (String) data.get("photoUrl") : (String) data.get("photo_url");
 
-            signalementService.creerSignalement(latitude, longitude, description, email, surfaceM2, budget, entrepriseConcerne, photoUrl);
-            return ResponseEntity.ok("Signalement créé avec succès");
+            Integer typeId = data.get("typeId") != null ? Integer.valueOf(data.get("typeId").toString()) : 
+                             (data.get("type_id") != null ? Integer.valueOf(data.get("type_id").toString()) : null);
+
+            signalementService.creerSignalement(latitude, longitude, description, email, surfaceM2, budget, entrepriseConcerne, photoUrl, typeId);
+            return ResponseEntity.ok(Map.of("message", "Signalement créé avec succès"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Unknown error", "type", e.getClass().getName()));
         }
     }
 
@@ -91,7 +100,10 @@ public class SignalementController {
             
             String photoUrl = data.get("photoUrl") != null ? (String) data.get("photoUrl") : (String) data.get("photo_url");
 
-            signalementService.modifierSignalement(id, latitude, longitude, statutId, description, surfaceM2, budget, entrepriseConcerne, photoUrl);
+            Integer typeId = data.get("typeId") != null ? Integer.valueOf(data.get("typeId").toString()) : 
+                             (data.get("type_id") != null ? Integer.valueOf(data.get("type_id").toString()) : null);
+
+            signalementService.modifierSignalement(id, latitude, longitude, statutId, description, surfaceM2, budget, entrepriseConcerne, photoUrl, typeId);
             return ResponseEntity.ok("Signalement modifié avec succès");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

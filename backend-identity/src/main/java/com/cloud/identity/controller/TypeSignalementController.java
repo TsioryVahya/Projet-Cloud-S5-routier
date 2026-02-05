@@ -31,8 +31,13 @@ public class TypeSignalementController {
     }
 
     @GetMapping
-    public List<TypeSignalement> getAll() {
-        return typeSignalementRepository.findAll();
+    public ResponseEntity<?> getAll() {
+        try {
+            return ResponseEntity.ok(typeSignalementRepository.findAll());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(java.util.Map.of("error", e.getMessage() != null ? e.getMessage() : "Unknown error", "type", e.getClass().getName()));
+        }
     }
 
     @GetMapping("/{id}")

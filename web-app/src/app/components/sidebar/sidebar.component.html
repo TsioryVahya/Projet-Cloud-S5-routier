@@ -9,7 +9,7 @@
   <!-- Sidebar Header -->
   <div class="p-6 border-b border-white/5 relative z-10 flex flex-col items-center">
     <div class="flex items-center gap-4 w-full" [ngClass]="isSidebarCollapsed ? 'justify-center' : 'justify-between'">
-      <div class="flex items-center gap-4">
+      <a routerLink="/dashboard/overview" class="flex items-center gap-4 hover:opacity-80 transition-opacity">
         <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-500/20 ring-4 ring-blue-500/10 active:scale-95 transition-all">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
@@ -19,7 +19,7 @@
           <h2 class="text-2xl font-black tracking-tight leading-none">ROUTIER<span class="text-blue-500">.</span></h2>
           <p class="text-[10px] uppercase tracking-[0.3em] text-slate-500 font-black mt-1">ADMIN PORTAL</p>
         </div>
-      </div>
+      </a>
       
       <!-- Toggle Button -->
       <button 
@@ -105,22 +105,23 @@
       </div>
     </a>
 
-    <a routerLink="/dashboard/users" routerLinkActive="bg-blue-600 text-white shadow-lg shadow-blue-600/20 active-link"
-         class="group flex items-center px-5 py-4 text-slate-400 hover:bg-white/5 hover:text-white rounded-2xl transition-all duration-300 relative"
-         [title]="isSidebarCollapsed ? 'Utilisateurs' : ''">
-        <div class="w-8 flex justify-center text-xl group-hover:scale-110 transition-transform duration-300" [ngClass]="isSidebarCollapsed ? 'mx-auto' : 'mr-3'">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-          </svg>
-        </div>
-        <span *ngIf="!isSidebarCollapsed" class="font-bold tracking-tight animate-fadeIn">Utilisateurs</span>
-        <div *ngIf="!isSidebarCollapsed" class="ml-auto opacity-0 group-[.active-link]:opacity-100 transition-opacity">
-          <div class="w-1.5 h-1.5 rounded-full bg-white shadow-sm shadow-white"></div>
-        </div>
-        <div *ngIf="isSidebarCollapsed" class="absolute left-full ml-4 px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 whitespace-nowrap shadow-xl border border-white/10">
-          Utilisateurs
-        </div>
-      </a>
+    <a routerLink="/dashboard/users"  
+       [ngClass]="isRouteActive('/dashboard/users') ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20 active-link' : 'text-slate-400 hover:bg-white/5 hover:text-white'" 
+       class="group flex items-center px-5 py-4 rounded-2xl transition-all duration-300 relative" 
+       [title]="isSidebarCollapsed ? 'Gestion Utilisateurs' : ''"> 
+      <div class="w-8 flex justify-center text-xl group-hover:scale-110 transition-transform duration-300" [ngClass]="isSidebarCollapsed ? 'mx-auto' : 'mr-3'"> 
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"> 
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /> 
+        </svg> 
+      </div> 
+      <span *ngIf="!isSidebarCollapsed" class="font-bold tracking-tight animate-fadeIn">Gestion Utilisateurs</span> 
+      <div *ngIf="!isSidebarCollapsed" class="ml-auto opacity-0" [ngClass]="isRouteActive('/dashboard/users') ? 'opacity-100' : ''"> 
+        <div class="w-1.5 h-1.5 rounded-full bg-white shadow-sm shadow-white"></div> 
+      </div> 
+      <div *ngIf="isSidebarCollapsed" class="absolute left-full ml-4 px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 whitespace-nowrap shadow-xl border border-white/10"> 
+        Gestion Utilisateurs 
+      </div> 
+    </a>
 
       <a routerLink="/dashboard/types-signalement" routerLinkActive="bg-blue-600 text-white shadow-lg shadow-blue-600/20 active-link"
          class="group flex items-center px-5 py-4 text-slate-400 hover:bg-white/5 hover:text-white rounded-2xl transition-all duration-300 relative"

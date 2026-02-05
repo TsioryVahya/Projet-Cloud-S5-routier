@@ -6,6 +6,7 @@ import com.cloud.identity.entities.Entreprise;
 import com.cloud.identity.entities.Signalement;
 import com.cloud.identity.entities.SignalementsDetail;
 import com.cloud.identity.entities.StatutsSignalement;
+import com.cloud.identity.entities.TypeSignalement;
 import com.cloud.identity.entities.Utilisateur;
 import com.cloud.identity.repository.EntrepriseRepository;
 import com.cloud.identity.repository.SignalementRepository;
@@ -23,6 +24,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import com.cloud.identity.repository.TypeSignalementRepository;
+import com.cloud.identity.repository.UtilisateurRepository;
 
 @Service
 public class SignalementService {
@@ -35,6 +38,9 @@ public class SignalementService {
 
     @Autowired
     private StatutsSignalementRepository statutRepository;
+
+    @Autowired
+    private TypeSignalementRepository typeSignalementRepository;
 
     @Autowired
     private EntrepriseRepository entrepriseRepository;
@@ -136,18 +142,26 @@ public class SignalementService {
 
     @Transactional
     public void creerSignalement(Double latitude, Double longitude, String description, String email,
-                                 Double surfaceM2, BigDecimal budget, String entrepriseNom, String photoUrl) throws Exception {
+                                 Double surfaceM2, BigDecimal budget, String entrepriseNom, String photoUrl,
+                                 Integer typeId) throws Exception {
         Utilisateur utilisateur = utilisateurRepository.findByEmail(email)
                 .orElseThrow(() -> new Exception("Utilisateur non trouvé"));
 
         StatutsSignalement statut = statutRepository.findByNom("nouveau")
                 .orElseThrow(() -> new Exception("Statut par défaut non trouvé"));
 
+        TypeSignalement type = null;
+        if (typeId != null) {
+            type = typeSignalementRepository.findById(typeId)
+                    .orElseThrow(() -> new Exception("Type de signalement non trouvé"));
+        }
+
         Signalement s = new Signalement();
         s.setLatitude(latitude);
         s.setLongitude(longitude);
         s.setStatut(statut);
         s.setUtilisateur(utilisateur);
+        s.setType(type);
         s.setDateSignalement(Instant.now());
 
         signalementRepository.save(s);
@@ -184,12 +198,18 @@ public class SignalementService {
     @Transactional
     public void modifierSignalement(UUID id, Double latitude, Double longitude, Integer statutId,
                                     String description, Double surfaceM2, BigDecimal budget,
-                                    String entrepriseNom, String photoUrl) throws Exception {
+                                    String entrepriseNom, String photoUrl, Integer typeId) throws Exception {
         Signalement s = signalementRepository.findById(id)
                 .orElseThrow(() -> new Exception("Signalement non trouvé"));
         
         StatutsSignalement statut = statutRepository.findById(statutId)
                 .orElseThrow(() -> new Exception("Statut non trouvé"));
+
+        if (typeId != null) {
+            TypeSignalement type = typeSignalementRepository.findById(typeId)
+                    .orElseThrow(() -> new Exception("Type de signalement non trouvé"));
+            s.setType(type);
+        }
 
         s.setLatitude(latitude);
         s.setLongitude(longitude);
@@ -281,6 +301,11 @@ public class SignalementService {
                     return statutRepository.save(newStatut);
                 });
         s.setStatut(statut);
+
+        // Gérer le type
+        if (dto.getIdTypeSignalement() != null) {
+            typeSignalementRepository.findById(dto.getIdTypeSignalement()).ifPresent(s::setType);
+        }
 
         // Gérer l'utilisateur
         String email = null;

@@ -16,6 +16,10 @@ export class SidebarComponent implements OnInit {
 
   constructor(private authService: AuthService, private router: Router) {}
 
+  isRouteActive(route: string): boolean {
+    return this.router.url === route;
+  }
+
   ngOnInit(): void {
     const user = this.authService.getCurrentUser();
     if (user) {

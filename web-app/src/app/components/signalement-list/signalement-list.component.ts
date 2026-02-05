@@ -1,9 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
 import { SignalementService } from '../../services/signalement.service';
-import { Signalement, StatutSignalement, TypeSignalement } from '../../models/signalement.model';
+import { Signalement, StatutSignalement } from '../../models/signalement.model';
 
 @Component({
   selector: 'app-signalement-list',
@@ -15,11 +14,12 @@ import { Signalement, StatutSignalement, TypeSignalement } from '../../models/si
 export class SignalementListComponent implements OnInit {
   signalements: Signalement[] = [];
   filteredSignalements: Signalement[] = [];
-  searchTerm: string = '';
   statuses: StatutSignalement[] = [];
-  types: TypeSignalement[] = [];
   entreprises: any[] = [];
   
+  // Search & Filter
+  searchTerm: string = '';
+
   // Modal States
   showEditModal = false;
   showPhotoModal = false;
@@ -31,31 +31,12 @@ export class SignalementListComponent implements OnInit {
   isSyncing = false;
   syncMessage = '';
 
-  constructor(
-    private signalementService: SignalementService,
-    private route: ActivatedRoute
-  ) {}
+  constructor(private signalementService: SignalementService) {}
 
   ngOnInit(): void {
     this.loadSignalements();
     this.loadStatuses();
-    this.loadTypes();
     this.loadEntreprises();
-
-    // Handle search parameter from URL
-    this.route.queryParams.subscribe(params => {
-      if (params['search']) {
-        this.searchTerm = params['search'];
-        this.applyFilter();
-      }
-    });
-  }
-
-  loadTypes(): void {
-    this.signalementService.getAllTypes().subscribe({
-      next: (data) => this.types = data,
-      error: (err) => console.error('Erreur lors du chargement des types', err)
-    });
   }
 
   loadSignalements(): void {
@@ -70,20 +51,6 @@ export class SignalementListComponent implements OnInit {
         console.error('Erreur lors du chargement des signalements', err);
       }
     });
-  }
-
-  applyFilter(): void {
-    if (!this.searchTerm) {
-      this.filteredSignalements = this.signalements;
-    } else {
-      const term = this.searchTerm.toLowerCase();
-      this.filteredSignalements = this.signalements.filter(s => 
-        String(s.id).includes(term) || 
-        (s.description && s.description.toLowerCase().includes(term)) ||
-        (s.typeNom && s.typeNom.toLowerCase().includes(term)) ||
-        (s.statut && s.statut.toLowerCase().includes(term))
-      );
-    }
   }
 
   stats = {
@@ -120,7 +87,7 @@ export class SignalementListComponent implements OnInit {
       error: (err) => console.error(err)
     });
   }
-
+  
   loadEntreprises(): void {
     this.signalementService.getAllEntreprises().subscribe({
       next: (data) => this.entreprises = data,
@@ -141,8 +108,7 @@ export class SignalementListComponent implements OnInit {
       description: signalement.description || '',
       budget: signalement.budget || 0,
       surfaceM2: signalement.surfaceM2 || 0,
-      entrepriseConcerne: signalement.entrepriseNom || signalement.entrepriseConcerne || '',
-      photoUrl: signalement.photoUrl || ''
+      entrepriseConcerne: signalement.entrepriseConcerne || ''
     };
     this.showEditModal = true;
   }
@@ -180,8 +146,7 @@ export class SignalementListComponent implements OnInit {
       description: signalement.description,
       budget: signalement.budget,
       surfaceM2: signalement.surfaceM2,
-      entrepriseConcerne: signalement.entrepriseConcerne,
-      photoUrl: signalement.photoUrl
+      entrepriseConcerne: signalement.entrepriseConcerne
     };
 
     this.signalementService.updateSignalement(id, updateData).subscribe({
@@ -230,14 +195,6 @@ export class SignalementListComponent implements OnInit {
     return 'bg-green-50 text-green-600 border-green-100 focus:ring-green-500';
   }
 
-  getProgressByStatus(status: string): number {
-    const s = String(status || '').toLowerCase();
-    if (s === 'nouveau') return 0;
-    if (s === 'en cours' || s === 'en_cours') return 50;
-    if (s === 'terminé' || s === 'termine') return 100;
-    return 0;
-  }
-
   deleteSignalement(id: string | undefined): void {
     if (!id) return;
     if (confirm('Êtes-vous sûr de vouloir supprimer ce signalement ?')) {
@@ -246,6 +203,36 @@ export class SignalementListComponent implements OnInit {
         error: (err) => console.error(err)
       });
     }
+  }
+
+  applyFilter(): void {
+    if (!this.searchTerm) {
+      this.filteredSignalements = [...this.signalements];
+      return;
+    }
+
+    const term = this.searchTerm.toLowerCase().trim();
+    this.filteredSignalements = this.signalements.filter(s => {
+      const idStr = (s.postgresId || s.id || '').toString().toLowerCase();
+      const typeStr = (s.typeNom || '').toLowerCase();
+      const descStr = (s.description || '').toLowerCase();
+      const emailStr = (s.utilisateur?.email || '').toLowerCase();
+      const statusStr = (s.statut || '').toLowerCase();
+
+      return idStr.includes(term) || 
+             typeStr.includes(term) || 
+             descStr.includes(term) || 
+             emailStr.includes(term) ||
+             statusStr.includes(term);
+    });
+  }
+
+  getProgressByStatus(statut: any): number {
+    const s = String(statut || '').toLowerCase();
+    if (s === 'nouveau') return 0;
+    if (s === 'en cours' || s === 'en_cours') return 50;
+    if (s === 'terminé' || s === 'termine') return 100;
+    return 0;
   }
 
   // Autres méthodes pour éditer ou changer le statut...
