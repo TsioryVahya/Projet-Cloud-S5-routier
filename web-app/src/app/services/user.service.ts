@@ -18,6 +18,10 @@ export class UserService {
     return this.http.get<Utilisateur[]>(this.apiUrl);
   }
 
+  getBlockedUsers(): Observable<Utilisateur[]> {
+    return this.http.get<Utilisateur[]>(`${this.apiUrl}/blocked`);
+  }
+
   getRoles(): Observable<Role[]> {
     return this.http.get<Role[]>(this.rolesUrl);
   }
