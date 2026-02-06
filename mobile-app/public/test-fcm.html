@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Service Worker FCM</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #357ae8;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔔 Test Service Worker FCM</h1>
+    
+    <div class="card">
+        <h2>1. Vérification Service Worker</h2>
+        <button onclick="checkServiceWorker()">Vérifier Service Worker</button>
+        <button onclick="registerServiceWorker()">Enregistrer Service Worker</button>
+        <button onclick="unregisterAll()">Désinscrire Tous les SW</button>
+        <div id="sw-status"></div>
+    </div>
+
+    <div class="card">
+        <h2>2. Permission Notifications</h2>
+        <button onclick="checkPermission()">Vérifier Permission</button>
+        <button onclick="requestPermission()">Demander Permission</button>
+        <div id="permission-status"></div>
+    </div>
+
+    <div class="card">
+        <h2>3. Test FCM Token</h2>
+        <button onclick="testFCMToken()">Obtenir Token FCM</button>
+        <div id="token-status"></div>
+    </div>
+
+    <div class="card">
+        <h2>4. Logs Console</h2>
+        <button onclick="clearLogs()">Effacer Logs</button>
+        <pre id="logs"></pre>
+    </div>
+
+    <script type="module">
+        let logs = [];
+
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            logs.push(`[${timestamp}] ${message}`);
+            const logsEl = document.getElementById('logs');
+            logsEl.textContent = logs.join('\n');
+            logsEl.scrollTop = logsEl.scrollHeight;
+            console.log(message);
+        }
+
+        window.addLog = addLog;
+
+        window.clearLogs = () => {
+            logs = [];
+            document.getElementById('logs').textContent = '';
+        };
+
+        window.checkServiceWorker = async () => {
+            const statusEl = document.getElementById('sw-status');
+            addLog('Vérification des Service Workers...');
+            
+            if (!('serviceWorker' in navigator)) {
+                statusEl.innerHTML = '<div class="status error">❌ Service Worker non supporté</div>';
+                addLog('Service Worker non supporté par ce navigateur', 'error');
+                return;
+            }
+
+            try {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                addLog(`Nombre de Service Workers trouvés: ${registrations.length}`);
+                
+                if (registrations.length === 0) {
+                    statusEl.innerHTML = '<div class="status error">❌ Aucun Service Worker enregistré</div>';
+                } else {
+                    let html = '<div class="status success">✅ Service Workers trouvés:</div>';
+                    registrations.forEach((reg, index) => {
+                        const state = reg.active ? 'activé' : 
+                                     reg.installing ? 'en installation' : 
+                                     reg.waiting ? 'en attente' : 'inconnu';
+                        html += `<div class="status info">
+                            <strong>SW ${index + 1}:</strong><br>
+                            Scope: ${reg.scope}<br>
+                            État: ${state}
+                        </div>`;
+                        addLog(`SW ${index + 1}: Scope=${reg.scope}, État=${state}`);
+                    });
+                    statusEl.innerHTML = html;
+                }
+            } catch (error) {
+                statusEl.innerHTML = `<div class="status error">❌ Erreur: ${error.message}</div>`;
+                addLog(`Erreur lors de la vérification: ${error.message}`, 'error');
+            }
+        };
+
+        window.registerServiceWorker = async () => {
+            const statusEl = document.getElementById('sw-status');
+            addLog('Tentative d\'enregistrement du Service Worker Firebase...');
+            
+            try {
+                const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+                    scope: '/'
+                });
+                
+                addLog('Service Worker enregistré avec succès');
+                addLog(`Scope: ${registration.scope}`);
+                
+                // Attendre l'activation
+                if (registration.installing) {
+                    addLog('Service Worker en cours d\'installation...');
+                    registration.installing.addEventListener('statechange', (e) => {
+                        addLog(`État du SW changé: ${e.target.state}`);
+                    });
+                }
+                
+                statusEl.innerHTML = '<div class="status success">✅ Service Worker enregistré avec succès!</div>';
+                
+                // Re-vérifier après 1 seconde
+                setTimeout(checkServiceWorker, 1000);
+            } catch (error) {
+                statusEl.innerHTML = `<div class="status error">❌ Erreur: ${error.message}</div>`;
+                addLog(`Erreur lors de l'enregistrement: ${error.message}`, 'error');
+            }
+        };
+
+        window.unregisterAll = async () => {
+            const statusEl = document.getElementById('sw-status');
+            addLog('Désinscription de tous les Service Workers...');
+            
+            try {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (const reg of registrations) {
+                    await reg.unregister();
+                    addLog(`Service Worker désinscrit: ${reg.scope}`);
+                }
+                statusEl.innerHTML = '<div class="status success">✅ Tous les Service Workers ont été désinscrits</div>';
+                setTimeout(checkServiceWorker, 500);
+            } catch (error) {
+                statusEl.innerHTML = `<div class="status error">❌ Erreur: ${error.message}</div>`;
+                addLog(`Erreur lors de la désinscription: ${error.message}`, 'error');
+            }
+        };
+
+        window.checkPermission = () => {
+            const statusEl = document.getElementById('permission-status');
+            const permission = Notification.permission;
+            addLog(`Permission actuelle: ${permission}`);
+            
+            const icons = {
+                granted: '✅',
+                denied: '❌',
+                default: '⚠️'
+            };
+            
+            const messages = {
+                granted: 'Notifications autorisées',
+                denied: 'Notifications bloquées - Veuillez les activer dans les paramètres du navigateur',
+                default: 'Permission non demandée'
+            };
+            
+            const classes = {
+                granted: 'success',
+                denied: 'error',
+                default: 'info'
+            };
+            
+            statusEl.innerHTML = `<div class="status ${classes[permission]}">${icons[permission]} ${messages[permission]}</div>`;
+        };
+
+        window.requestPermission = async () => {
+            const statusEl = document.getElementById('permission-status');
+            addLog('Demande de permission pour les notifications...');
+            
+            try {
+                const permission = await Notification.requestPermission();
+                addLog(`Permission accordée: ${permission}`);
+                checkPermission();
+            } catch (error) {
+                statusEl.innerHTML = `<div class="status error">❌ Erreur: ${error.message}</div>`;
+                addLog(`Erreur lors de la demande de permission: ${error.message}`, 'error');
+            }
+        };
+
+        window.testFCMToken = async () => {
+            const statusEl = document.getElementById('token-status');
+            addLog('Test de récupération du token FCM...');
+            
+            statusEl.innerHTML = '<div class="status info">⏳ Chargement de Firebase...</div>';
+            
+            try {
+                // Importer Firebase
+                const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js');
+                const { getMessaging, getToken } = await import('https://www.gstatic.com/firebasejs/10.0.0/firebase-messaging.js');
+                
+                addLog('Firebase importé avec succès');
+                
+                // Configuration Firebase
+                const firebaseConfig = {
+                    apiKey: "AIzaSyBroRMMRCSVdqAzpuivp7PSSP9X1WIk3VY",
+                    authDomain: "projet-cloud-s5-routier.firebaseapp.com",
+                    projectId: "projet-cloud-s5-routier",
+                    storageBucket: "projet-cloud-s5-routier.firebasestorage.app",
+                    messagingSenderId: "792049548362",
+                    appId: "1:792049548362:web:6ab3ce65b1584730c63ab3"
+                };
+                
+                const app = initializeApp(firebaseConfig);
+                const messaging = getMessaging(app);
+                addLog('Firebase Messaging initialisé');
+                
+                // Vérifier la permission
+                if (Notification.permission !== 'granted') {
+                    statusEl.innerHTML = '<div class="status error">❌ Permission non accordée. Veuillez d\'abord autoriser les notifications.</div>';
+                    return;
+                }
+                
+                // Vérifier le Service Worker
+                const registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+                if (!registration || !registration.active) {
+                    statusEl.innerHTML = '<div class="status error">❌ Service Worker non actif. Veuillez d\'abord l\'enregistrer.</div>';
+                    addLog('Service Worker Firebase non trouvé ou non actif', 'error');
+                    return;
+                }
+                
+                addLog('Tentative de récupération du token...');
+                
+                const token = await getToken(messaging, {
+                    vapidKey: 'BMjmtEyox-Cq7673l2i68KbFeQQNRF6trQeuN4tfYHvwMBFbPoMtMgUL2FdX4MDd0XLm-PdCQLM-mZunRByy9tI',
+                    serviceWorkerRegistration: registration
+                });
+                
+                if (token) {
+                    statusEl.innerHTML = `<div class="status success">✅ Token FCM obtenu:<br><code style="word-break: break-all;">${token}</code></div>`;
+                    addLog(`Token FCM: ${token}`);
+                    addLog('✅ Test FCM réussi!');
+                } else {
+                    statusEl.innerHTML = '<div class="status error">❌ Aucun token reçu</div>';
+                    addLog('Aucun token reçu de Firebase', 'error');
+                }
+            } catch (error) {
+                statusEl.innerHTML = `<div class="status error">❌ Erreur: ${error.message}</div>`;
+                addLog(`Erreur FCM: ${error.message}`, 'error');
+                console.error('Détails de l\'erreur:', error);
+            }
+        };
+
+        // Vérification automatique au chargement
+        window.addEventListener('load', () => {
+            addLog('=== Page de test chargée ===');
+            checkServiceWorker();
+            checkPermission();
+        });
+    </script>
+</body>
+</html>

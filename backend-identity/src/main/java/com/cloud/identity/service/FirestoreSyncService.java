@@ -13,6 +13,9 @@ import com.google.firebase.auth.UserRecord;
 import com.google.firebase.auth.AuthErrorCode;
 import com.google.firebase.auth.UserRecord.CreateRequest;
 import com.google.firebase.auth.UserRecord.UpdateRequest;
+import com.google.firebase.messaging.FirebaseMessaging;
+import com.google.firebase.messaging.Message;
+import com.google.firebase.messaging.Notification;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -276,6 +279,52 @@ public class FirestoreSyncService {
             }
         } catch (Exception e) {
             System.err.println("⚠️ Erreur Firebase Auth pour " + user.getEmail() + " : " + e.getMessage());
+        }
+    }
+
+    /**
+     * Envoie une notification push à l'utilisateur lors du changement de statut
+     * d'un signalement.
+     */
+    public void sendNotificationStatutChange(Signalement s) {
+        if (s.getUtilisateur() == null)
+            return;
+
+        try {
+            // 1. Récupérer le token FCM de l'utilisateur dans Firestore
+            DocumentSnapshot userDoc = firestore.collection("utilisateurs")
+                    .document(s.getUtilisateur().getId().toString())
+                    .get().get();
+
+            String fcmToken = userDoc.getString("fcmToken");
+
+            if (fcmToken == null || fcmToken.isEmpty()) {
+                System.out.println("ℹ️ Aucun token FCM trouvé pour l'utilisateur " + s.getUtilisateur().getEmail());
+                return;
+            }
+
+            // 2. Préparer le message
+            String titre = "Mise à jour de votre signalement";
+            String corps = "Le statut de votre signalement est passé à : " + s.getStatut().getNom();
+
+            Notification notification = Notification.builder()
+                    .setTitle(titre)
+                    .setBody(corps)
+                    .build();
+
+            Message message = Message.builder()
+                    .setToken(fcmToken)
+                    .setNotification(notification)
+                    .putData("signalementId", s.getId().toString())
+                    .putData("nouveauStatut", s.getStatut().getNom())
+                    .build();
+
+            // 3. Envoyer via FCM
+            String response = FirebaseMessaging.getInstance().send(message);
+            System.out.println("✅ Notification envoyée avec succès : " + response);
+
+        } catch (Exception e) {
+            System.err.println("⚠️ Erreur lors de l'envoi de la notification FCM : " + e.getMessage());
         }
     }
 

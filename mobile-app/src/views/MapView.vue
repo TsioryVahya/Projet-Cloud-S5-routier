@@ -221,7 +221,6 @@ import {
   trashOutline
 } from 'ionicons/icons';
 import * as L from 'leaflet';
-import { db } from '../firebase/config';
 import { 
   collection, 
   addDoc, 
@@ -233,6 +232,8 @@ import {
   getDoc,
   updateDoc
 } from 'firebase/firestore';
+import { getToken } from 'firebase/messaging';
+import { db, getMessagingInstance } from '../firebase/config';
 import { store, setUser } from '../store';
 
 // UI State
@@ -244,6 +245,133 @@ const loginEmail = ref('');
 const loginPassword = ref('');
 const authError = ref('');
 const isAuthLoading = ref(false);
+
+// FCM Logic
+const requestFcmToken = async (userDocRef: any) => {
+  console.log('Début requestFcmToken...');
+  
+  try {
+    // Obtenir l'instance de messaging (qui s'assure que le SW est prêt)
+    const messaging = await getMessagingInstance();
+    
+    if (!messaging) {
+      console.error('Messaging non disponible (Service Worker non supporté ou erreur d\'initialisation)');
+      // Enregistrer que le messaging n'est pas disponible
+      await updateDoc(userDocRef, {
+        fcmToken: null,
+        fcmTokenStatus: 'messaging_unavailable',
+        fcmTokenError: 'Service Worker non supporté',
+        fcmTokenDate: new Date().toISOString()
+      });
+      return;
+    }
+    
+    // Demander explicitement la permission
+    let permission = Notification.permission;
+    if (permission === 'default') {
+      permission = await Notification.requestPermission();
+    }
+    console.log('Permission notification:', permission);
+    
+    if (permission !== 'granted') {
+      console.warn("Permission de notification non accordée:", permission);
+      
+      // Enregistrer le refus de permission
+      await updateDoc(userDocRef, {
+        fcmToken: null,
+        fcmTokenStatus: permission === 'denied' ? 'permission_denied' : 'permission_default',
+        fcmTokenError: `Permission: ${permission}`,
+        fcmTokenDate: new Date().toISOString()
+      });
+      
+      if (permission === 'denied') {
+        alert("Les notifications sont bloquées par votre navigateur. Veuillez les activer dans les paramètres du site (cliquez sur l'icône à gauche de l'URL).");
+      }
+      return;
+    }
+
+    // Récupérer le token FCM
+    console.log('Tentative de récupération du token FCM...');
+    
+    try {
+      const currentToken = await getToken(messaging, {
+        vapidKey: 'BMjmtEyox-Cq7673l2i68KbFeQQNRF6trQeuN4tfYHvwMBFbPoMtMgUL2FdX4MDd0XLm-PdCQLM-mZunRByy9tI'
+      });
+      
+      if (currentToken) {
+        console.log('✅ FCM Token reçu:', currentToken);
+        await updateDoc(userDocRef, {
+          fcmToken: currentToken,
+          fcmTokenStatus: 'active',
+          fcmTokenDate: new Date().toISOString()
+        });
+        if (store.user) {
+          store.user.fcmToken = currentToken;
+          localStorage.setItem('app_user', JSON.stringify(store.user));
+        }
+        console.log('Token FCM enregistré avec succès dans Firestore');
+      } else {
+        console.warn('Aucun token FCM reçu');
+        // Enregistrer qu'aucun token n'a été reçu
+        await updateDoc(userDocRef, {
+          fcmToken: null,
+          fcmTokenStatus: 'no_token',
+          fcmTokenDate: new Date().toISOString()
+        });
+      }
+    } catch (tokenError: any) {
+      // Erreur spécifique lors de la récupération du token
+      console.error('❌ Erreur lors de la récupération du token FCM:', tokenError.message);
+      
+      if (tokenError.code === 'messaging/token-subscribe-failed' || 
+          tokenError.message?.includes('push service error')) {
+        console.warn('⚠️ Push service error détecté. Cela peut être dû à:');
+        console.warn('1. Problème temporaire du service de push du navigateur');
+        console.warn('2. Clé VAPID incorrecte ou expirée');
+        console.warn('3. Configuration Firebase Cloud Messaging incomplète');
+        console.warn('L\'utilisateur pourra tout de même utiliser l\'application, mais sans notifications push.');
+        
+        // Enregistrer l'erreur dans Firestore pour diagnostic
+        await updateDoc(userDocRef, {
+          fcmToken: null,
+          fcmTokenStatus: 'error',
+          fcmTokenError: tokenError.message || 'push service error',
+          fcmTokenDate: new Date().toISOString()
+        });
+        
+        console.log('➡️ Connexion sans token FCM (mode dégradé) - Erreur enregistrée dans Firestore');
+      } else {
+        // Autre erreur, enregistrer quand même
+        await updateDoc(userDocRef, {
+          fcmToken: null,
+          fcmTokenStatus: 'error',
+          fcmTokenError: tokenError.message || 'unknown error',
+          fcmTokenDate: new Date().toISOString()
+        });
+        
+        // On ne propage pas l'erreur pour ne pas bloquer la connexion
+        console.log('➡️ Connexion sans token FCM - Autre erreur enregistrée');
+      }
+    }
+    
+  } catch (err: any) {
+    console.error('Erreur globale lors de la récupération du token FCM:', err);
+    console.error('Détails de l\'erreur:', err.message, err.code);
+    
+    // Enregistrer l'erreur globale dans Firestore
+    try {
+      await updateDoc(userDocRef, {
+        fcmToken: null,
+        fcmTokenStatus: 'error',
+        fcmTokenError: err.message || 'Erreur inconnue',
+        fcmTokenDate: new Date().toISOString()
+      });
+      console.log('Erreur FCM enregistrée dans Firestore');
+    } catch (updateError) {
+      console.error('Impossible d\'enregistrer l\'erreur FCM dans Firestore:', updateError);
+    }
+  }
+};
 
 // Signalement State
 const newSignalementPoint = ref<{lat: number, lng: number} | null>(null);
@@ -336,7 +464,7 @@ const handleLogin = async () => {
       email: userData.email,
       role: userData.role,
       statut: userData.statut,
-      postgresId: userData.id // On utilise le champ 'id' de Firestore qui contient le UUID
+      postgresId: userData.postgresId
     };
     // 4. Vérifier le mot de passe
     if (userData.motDePasse === password) {
@@ -348,16 +476,16 @@ const handleLogin = async () => {
 
       const expiresAt = new Date(Date.now() + dureeHeures * 3600 * 1000).toISOString();
 
-      const appUser = {
-        email: userData.email,
-        role: userData.role,
-        statut: userData.statut,
-        postgresId: userData.postgresId,
+      const finalUser = {
+        ...appUser,
         expiresAt: expiresAt
       };
 
-      setUser(appUser);
-      localStorage.setItem('app_user', JSON.stringify(appUser));
+      setUser(finalUser);
+      localStorage.setItem('app_user', JSON.stringify(finalUser));
+      
+      // Récupérer le token FCM après connexion réussie
+      await requestFcmToken(userDocRef);
       
       showLoginModal.value = false;
       loginEmail.value = '';

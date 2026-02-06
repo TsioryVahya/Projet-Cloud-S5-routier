@@ -24,6 +24,7 @@ export interface AppUser {
   statut?: string;
   postgresId?: string;
   expiresAt?: string;
+  fcmToken?: string;
 }
 
 // État global simple

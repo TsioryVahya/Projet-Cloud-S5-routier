@@ -216,9 +216,20 @@ public class SignalementService {
 
         s.setLatitude(latitude);
         s.setLongitude(longitude);
+
+        StatutsSignalement ancienStatut = s.getStatut();
         s.setStatut(statut);
 
         signalementRepository.save(s);
+
+        // Envoyer une notification si le statut a changé
+        if (ancienStatut != null && !ancienStatut.getId().equals(statut.getId())) {
+            try {
+                firestoreSyncService.sendNotificationStatutChange(s);
+            } catch (Exception e) {
+                System.err.println("Erreur envoi notification: " + e.getMessage());
+            }
+        }
 
         // Mettre à jour les détails
         SignalementsDetail details = detailsRepository.findBySignalement(s)
