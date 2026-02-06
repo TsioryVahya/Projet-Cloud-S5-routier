@@ -24,9 +24,9 @@ public class ConfigurationController {
     public ResponseEntity<?> syncToFirebase() {
         try {
             syncService.syncConfigurationsToFirestore();
-            return ResponseEntity.ok().body("{\"message\": \"Configurations synchronisées vers Firestore\"}");
+            return ResponseEntity.ok().body(java.util.Map.of("message", "Configurations synchronisées vers Firestore"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(java.util.Map.of("error", e.getMessage()));
         }
     }
 

@@ -200,6 +200,7 @@ public class FirestoreSyncService {
             data.put("dateCreation", user.getDateCreation() != null ? user.getDateCreation().toString() : null);
             data.put("derniereConnexion", user.getDerniereConnexion() != null ? user.getDerniereConnexion().toString() : null);
             data.put("date_derniere_modification", user.getDateDerniereModification() != null ? com.google.cloud.Timestamp.of(java.sql.Timestamp.from(user.getDateDerniereModification())) : null);
+            data.put("date_deblocage_automatique", user.getDateDeblocageAutomatique() != null ? user.getDateDeblocageAutomatique().toString() : null);
 
             // LOG POUR DEBUG : On affiche ce qu'on envoie
             System.out.println("📤 Sync vers Firestore [" + user.getEmail() + "] - MDP: " + user.getMotDePasse());

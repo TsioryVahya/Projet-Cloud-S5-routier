@@ -75,8 +75,21 @@ public class AuthService {
                 if (user.getTentativesConnexion() >= maxTentatives) {
                     blockUser(user);
                     saveHistorique(user, false, ipAddress, userAgent, "mot_de_passe_incorrect_blocage");
+                    
+                    // Synchronisation vers Firestore après blocage
+                    try {
+                        firestoreSyncService.syncUserToFirestore(user);
+                        System.out.println("✅ Utilisateur " + email + " bloqué et synchronisé vers Firestore.");
+                    } catch (Exception e) {
+                        System.err.println("❌ Erreur lors de la synchronisation du blocage vers Firestore : " + e.getMessage());
+                    }
                 } else {
                     saveHistorique(user, false, ipAddress, userAgent, "mot_de_passe_incorrect");
+                    
+                    // Optionnel : synchroniser le nombre de tentatives vers Firestore
+                    try {
+                        firestoreSyncService.syncUserToFirestore(user);
+                    } catch (Exception e) {}
                 }
                 
                 utilisateurRepository.save(user);
