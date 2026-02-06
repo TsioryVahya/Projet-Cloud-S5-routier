@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.cloud.routier',
+  appId: 'com.company.projetCloud',
   appName: 'mobile-app',
   webDir: 'dist'
 };

@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "com.cloud.routier"
+    namespace = "com.company.projetCloud"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.cloud.routier"
+        applicationId "com.company.projetCloud"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

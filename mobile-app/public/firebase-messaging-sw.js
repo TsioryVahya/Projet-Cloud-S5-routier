@@ -40,15 +40,25 @@ self.addEventListener('message', (event) => {
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Message reçu en arrière-plan ', payload);
   
-  const notificationTitle = payload.notification.title || 'Mise à jour Signalement';
+  // Extraire les infos du payload (notification ou data)
+  const title = payload.notification?.title || payload.data?.title || 'Mise à jour Signalement';
+  const body = payload.notification?.body || payload.data?.body || 'Un changement a été détecté sur votre signalement.';
+  
   const notificationOptions = {
-    body: payload.notification.body || 'Un changement a été détecté sur votre signalement.',
-    icon: '/assets/icon/favicon.png', // Assurez-vous que ce chemin est correct
-    badge: '/assets/icon/favicon.png',
-    data: payload.data
+    body: body,
+    icon: '/favicon.ico', // Utiliser un chemin plus sûr pour le test
+    badge: '/favicon.ico',
+    tag: 'signalement-update-' + (payload.data?.signalementId || Date.now()),
+    renotify: true,
+    data: payload.data,
+    vibrate: [200, 100, 200]
   };
 
-  self.registration.showNotification(notificationTitle, notificationOptions);
+  console.log('[firebase-messaging-sw.js] Tentative d\'affichage de la notification:', title);
+  
+  return self.registration.showNotification(title, notificationOptions)
+    .then(() => console.log('[firebase-messaging-sw.js] Notification affichée avec succès'))
+    .catch(err => console.error('[firebase-messaging-sw.js] Erreur lors de l\'affichage de la notification:', err));
 });
 
 // Éviter que le Service Worker ne s'arrête prématurément

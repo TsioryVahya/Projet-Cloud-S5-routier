@@ -287,44 +287,73 @@ public class FirestoreSyncService {
      * d'un signalement.
      */
     public void sendNotificationStatutChange(Signalement s) {
-        if (s.getUtilisateur() == null)
+        if (s.getUtilisateur() == null) {
+            System.out.println("ℹ️ Notification annulée : aucun utilisateur lié au signalement " + s.getId());
             return;
+        }
+
+        String userId = s.getUtilisateur().getId().toString();
+        System.out.println("🔔 Tentative d'envoi de notification pour le signalement " + s.getId() + " (Utilisateur: "
+                + userId + ")");
 
         try {
             // 1. Récupérer le token FCM de l'utilisateur dans Firestore
             DocumentSnapshot userDoc = firestore.collection("utilisateurs")
-                    .document(s.getUtilisateur().getId().toString())
+                    .document(userId)
                     .get().get();
+
+            if (!userDoc.exists()) {
+                System.out.println("⚠️ Document utilisateur " + userId + " introuvable dans Firestore.");
+                return;
+            }
 
             String fcmToken = userDoc.getString("fcmToken");
 
             if (fcmToken == null || fcmToken.isEmpty()) {
-                System.out.println("ℹ️ Aucun token FCM trouvé pour l'utilisateur " + s.getUtilisateur().getEmail());
+                System.out.println("ℹ️ Aucun token FCM trouvé pour l'utilisateur " + s.getUtilisateur().getEmail()
+                        + " (ID: " + userId + ")");
                 return;
             }
 
+            System.out.println("📱 Token FCM trouvé : " + fcmToken.substring(0, 10) + "...");
+
             // 2. Préparer le message
             String titre = "Mise à jour de votre signalement";
-            String corps = "Le statut de votre signalement est passé à : " + s.getStatut().getNom();
+            String corps = "Le statut de votre signalement est passé à : "
+                    + (s.getStatut() != null ? s.getStatut().getNom() : "Inconnu");
 
             Notification notification = Notification.builder()
                     .setTitle(titre)
                     .setBody(corps)
                     .build();
 
+            // Ajout de configuration spécifique pour Android (priorité haute)
+            com.google.firebase.messaging.AndroidConfig androidConfig = com.google.firebase.messaging.AndroidConfig
+                    .builder()
+                    .setPriority(com.google.firebase.messaging.AndroidConfig.Priority.HIGH)
+                    .setNotification(com.google.firebase.messaging.AndroidNotification.builder()
+                            .setSound("default")
+                            .setClickAction("FCM_PLUGIN_ACTIVITY")
+                            .build())
+                    .build();
+
             Message message = Message.builder()
                     .setToken(fcmToken)
                     .setNotification(notification)
+                    .setAndroidConfig(androidConfig)
                     .putData("signalementId", s.getId().toString())
-                    .putData("nouveauStatut", s.getStatut().getNom())
+                    .putData("nouveauStatut", s.getStatut() != null ? s.getStatut().getNom() : "")
+                    .putData("click_action", "FLUTTER_NOTIFICATION_CLICK") // Pour certains plugins
                     .build();
 
             // 3. Envoyer via FCM
+            System.out.println("🚀 Envoi du message FCM...");
             String response = FirebaseMessaging.getInstance().send(message);
-            System.out.println("✅ Notification envoyée avec succès : " + response);
+            System.out.println("✅ Notification envoyée avec succès ! ID Message : " + response);
 
         } catch (Exception e) {
             System.err.println("⚠️ Erreur lors de l'envoi de la notification FCM : " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

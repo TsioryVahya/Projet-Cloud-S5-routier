@@ -231,9 +231,12 @@ import {
   doc,
   getDoc,
   updateDoc,
-  orderBy
+  orderBy,
+  onSnapshot
 } from 'firebase/firestore';
-import { getToken, getMessaging } from 'firebase/messaging';
+import { getToken, getMessaging, onMessage } from 'firebase/messaging';
+import { PushNotifications } from '@capacitor/push-notifications';
+import { Capacitor } from '@capacitor/core';
 import { db } from '../firebase/config';
 import { store, setUser } from '../store';
 
@@ -251,6 +254,69 @@ const isAuthLoading = ref(false);
 const requestFcmToken = async (userDocRef: any) => {
   console.log('Début requestFcmToken...');
   
+  // Vérifier si on est sur mobile (Android/iOS) ou Web
+  const isNative = Capacitor.isNativePlatform();
+  console.log('Plateforme native:', isNative);
+
+  if (isNative) {
+    try {
+      // 1. Demander la permission (Native)
+      let permStatus = await PushNotifications.checkPermissions();
+      if (permStatus.receive === 'prompt') {
+        permStatus = await PushNotifications.requestPermissions();
+      }
+
+      if (permStatus.receive !== 'granted') {
+        console.warn('Permission push native refusée');
+        await updateDoc(userDocRef, {
+          fcmTokenStatus: 'native_permission_denied',
+          fcmTokenDate: new Date().toISOString()
+        });
+        return;
+      }
+
+      // 2. S'enregistrer pour recevoir les notifications
+      await PushNotifications.register();
+
+      // 3. Écouter le succès de l'enregistrement pour obtenir le token
+      PushNotifications.addListener('registration', async (token) => {
+        console.log('Native FCM Token reçu:', token.value);
+        await updateDoc(userDocRef, {
+          fcmToken: token.value,
+          fcmTokenStatus: 'success_native',
+          fcmTokenDate: new Date().toISOString(),
+          fcmTokenError: null
+        });
+        
+        if (store.user) {
+          store.user.fcmToken = token.value;
+          localStorage.setItem('app_user', JSON.stringify(store.user));
+        }
+      });
+
+      // 4. Écouter les erreurs
+      PushNotifications.addListener('registrationError', async (error) => {
+        console.error('Erreur registration native:', error);
+        await updateDoc(userDocRef, {
+          fcmTokenStatus: 'error_native',
+          fcmTokenError: error.error,
+          fcmTokenDate: new Date().toISOString()
+        });
+      });
+
+      // 5. Écouter les notifications reçues (Optionnel ici car géré par le plugin)
+      PushNotifications.addListener('pushNotificationReceived', (notification) => {
+        console.log('Push reçue (native):', notification);
+        alert(`${notification.title}\n\n${notification.body}`);
+      });
+
+    } catch (err: any) {
+      console.error('Erreur lors de la config push native:', err);
+    }
+    return; // Fin pour le mode natif
+  }
+
+  // LOGIQUE WEB (Fallback si pas natif)
   try {
     // 1. Obtenir l'instance de messaging (qui s'assure que le SW est prêt)
     // IMPORTANT: On utilise directement getMessaging de firebase/messaging ici
@@ -475,7 +541,9 @@ const initMap = () => {
   const tana = { lat: -18.8792, lng: 47.5079 };
   map = L.map('map', {
     zoomControl: false,
-    attributionControl: false
+    attributionControl: false,
+    tap: false, // Désactiver tap pour éviter les conflits touchmove sur mobile
+    touchZoom: true
   }).setView([tana.lat, tana.lng], 13);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -682,7 +750,28 @@ const scrollCarousel = (direction: 'left' | 'right') => {
   });
 };
 
-onMounted(() => {
+onMounted(async () => {
+  // Écouter les notifications en premier plan
+  try {
+    const messaging = await getMessaging();
+    onMessage(messaging, (payload) => {
+      console.log('Notification reçue en premier plan:', payload);
+      alert(`${payload.notification?.title}\n\n${payload.notification?.body}`);
+    });
+  } catch (err) {
+    console.warn("Erreur lors de l'initialisation du listener onMessage:", err);
+  }
+
+  // Auth & Token logic
+  if (store.user && store.user.postgresId) {
+    try {
+      const userDocRef = doc(db, 'utilisateurs', store.user.postgresId);
+      requestFcmToken(userDocRef);
+    } catch (err) {
+      console.error("Erreur lors de la récupération du token au montage:", err);
+    }
+  }
+
   setTimeout(() => {
     initMap();
     updateMarkers(); // Initial render if data already exists
