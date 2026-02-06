@@ -64,16 +64,19 @@ public class UtilisateurController {
         Utilisateur saved = repository.save(entity);
         try {
             syncService.syncUserToFirestore(saved);
-        } catch (Exception e) {}
+        } catch (Exception e) {
+        }
         return saved;
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Utilisateur> update(@PathVariable UUID id, @RequestBody Utilisateur entity) {
         Utilisateur existingUser = repository.findById(id).orElse(null);
-        if (existingUser == null) return ResponseEntity.notFound().build();
-        
-        // Mettre à jour les champs de l'objet existant au lieu de sauvegarder l'objet reçu
+        if (existingUser == null)
+            return ResponseEntity.notFound().build();
+
+        // Mettre à jour les champs de l'objet existant au lieu de sauvegarder l'objet
+        // reçu
         existingUser.setEmail(entity.getEmail());
         if (entity.getMotDePasse() != null && !entity.getMotDePasse().isEmpty()) {
             existingUser.setMotDePasse(entity.getMotDePasse());
@@ -81,20 +84,20 @@ public class UtilisateurController {
         existingUser.setRole(entity.getRole());
         existingUser.setStatutActuel(entity.getStatutActuel());
         existingUser.setDateDerniereModification(java.time.Instant.now());
-        
+
         Utilisateur saved = repository.save(existingUser);
         try {
             syncService.syncUserToFirestore(saved);
-        } catch (Exception e) {}
+        } catch (Exception e) {
+        }
         return ResponseEntity.ok(saved);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         return repository.findById(id).map(user -> {
-            // Supprimer de Firestore d'abord (en utilisant l'ID et l'email pour être sûr)
-            syncService.deleteUserInFirestore(user.getId().toString());
-            syncService.deleteUserInFirestore(user.getEmail());
+            // Supprimer de Firestore et Firebase Auth
+            syncService.deleteUserCompletely(user.getId().toString(), user.getEmail());
 
             // Supprimer de Postgres
             repository.delete(user);
