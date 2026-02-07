@@ -5,6 +5,8 @@ import com.cloud.identity.entities.Signalement;
 import com.cloud.identity.entities.SignalementsDetail;
 import com.cloud.identity.repository.SignalementsDetailRepository;
 import com.cloud.identity.service.SignalementService;
+import com.cloud.identity.service.NotificationPersistanceService;
+import com.google.cloud.firestore.Firestore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -25,6 +28,12 @@ public class SignalementController {
 
     @Autowired
     private SignalementsDetailRepository detailsRepository;
+
+    @Autowired
+    private NotificationPersistanceService notificationService;
+
+    @Autowired
+    private Firestore firestore;
 
     @PostMapping("/sync")
     public ResponseEntity<?> sync() {
@@ -84,6 +93,14 @@ public class SignalementController {
     @PutMapping("/{id}")
     public ResponseEntity<?> update(@PathVariable UUID id, @RequestBody Map<String, Object> data) {
         try {
+            // Récupérer l'ancien statut avant modification
+            Optional<Signalement> signalementActuelOpt = signalementService.getSignalementById(id);
+            if (!signalementActuelOpt.isPresent()) {
+                return ResponseEntity.notFound().build();
+            }
+            Integer ancienStatutId = signalementActuelOpt.get().getStatut() != null ? 
+                                     signalementActuelOpt.get().getStatut().getId() : null;
+            
             Double latitude = data.get("latitude") != null ? Double.valueOf(data.get("latitude").toString()) : null;
             Double longitude = data.get("longitude") != null ? Double.valueOf(data.get("longitude").toString()) : null;
             Integer statutId = data.get("statutId") != null ? Integer.valueOf(data.get("statutId").toString()) : 
@@ -104,6 +121,58 @@ public class SignalementController {
                              (data.get("type_id") != null ? Integer.valueOf(data.get("type_id").toString()) : null);
 
             signalementService.modifierSignalement(id, latitude, longitude, statutId, description, surfaceM2, budget, entrepriseConcerne, photoUrl, typeId);
+            
+            // Si le statut a changé, envoyer une notification
+            if (statutId != null && !statutId.equals(ancienStatutId)) {
+                try {
+                    Optional<Signalement> signalementModifieOpt = signalementService.getSignalementById(id);
+                    if (signalementModifieOpt.isPresent()) {
+                        Signalement signalementModifie = signalementModifieOpt.get();
+                        String userEmail = signalementModifie.getUtilisateur() != null ? 
+                                          signalementModifie.getUtilisateur().getEmail() : null;
+                        
+                        if (userEmail == null) {
+                            System.err.println("⚠️ Impossible d'envoyer la notification : email utilisateur introuvable");
+                            return ResponseEntity.ok("Signalement modifié avec succès");
+                        }
+                        
+                        String nouveauStatut = signalementModifie.getStatut() != null ? 
+                                              signalementModifie.getStatut().getNom() : "INCONNU";
+                        
+                        // Récupérer le token FCM depuis Firestore
+                        String fcmToken = null;
+                        try {
+                            Map<String, Object> userData = firestore
+                                    .collection("utilisateurs")
+                                    .document(userEmail)
+                                    .get()
+                                    .get()
+                                    .getData();
+                            
+                            if (userData != null) {
+                                fcmToken = (String) userData.get("fcmToken");
+                            }
+                        } catch (Exception e) {
+                            System.err.println("⚠️ Impossible de récupérer le token FCM: " + e.getMessage());
+                        }
+                        
+                        // Envoyer la notification
+                        System.out.println("📨 Envoi notification pour changement de statut: " + nouveauStatut + " pour " + userEmail);
+                        notificationService.notifierChangementStatut(
+                                userEmail,
+                                fcmToken,
+                                signalementModifie.getId().hashCode(), // Convertir UUID en Integer
+                                nouveauStatut
+                        );
+                        System.out.println("✅ Notification envoyée avec succès");
+                    }
+                } catch (Exception notifError) {
+                    System.err.println("❌ Erreur lors de l'envoi de la notification: " + notifError.getMessage());
+                    notifError.printStackTrace();
+                    // Ne pas bloquer la modification du signalement si la notification échoue
+                }
+            }
+            
             return ResponseEntity.ok("Signalement modifié avec succès");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

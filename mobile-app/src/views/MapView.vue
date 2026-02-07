@@ -308,10 +308,37 @@ const requestFcmToken = async (userDocRef: any) => {
         });
       });
 
-      // 5. Écouter les notifications reçues (Optionnel ici car géré par le plugin)
-      PushNotifications.addListener('pushNotificationReceived', (notification) => {
-        console.log('Push reçue (native):', notification);
-        alert(`${notification.title}\n\n${notification.body}`);
+      // 5. Écouter les notifications reçues en foreground (quand l'app est ouverte)
+      PushNotifications.addListener('pushNotificationReceived', async (notification) => {
+        console.log('📱 Push reçue (native foreground):', notification);
+        
+        // Vérifier que l'utilisateur est connecté
+        if (!store.user) {
+          console.log('⏭️ Notification native reçue mais utilisateur non connecté, ignorée');
+          return;
+        }
+        
+        // Afficher dans un toast au lieu d'alert
+        const toast = await toastController.create({
+          message: `${notification.title}: ${notification.body}`,
+          duration: 6000,
+          position: 'top',
+          color: 'success',
+          buttons: [
+            {
+              text: 'OK',
+              role: 'cancel'
+            }
+          ]
+        });
+        
+        await toast.present();
+      });
+
+      // 6. Écouter les clics sur les notifications
+      PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
+        console.log('📱 Notification cliquée:', notification);
+        // Vous pouvez naviguer vers une page spécifique ici
       });
 
     } catch (err: any) {
@@ -404,13 +431,19 @@ const setupNotificationListener = async (userEmail: string) => {
     const q = query(
       notificationsRef,
       where('userEmail', '==', userEmail),
-      where('lue', '==', false),
-      orderBy('dateCreation', 'desc')
+      where('lue', '==', false)
+      // orderBy('dateCreation', 'desc') -- Temporairement désactivé en attendant l'index
     );
     
     // Écouter les nouvelles notifications en temps réel
     unsubscribeNotifications = onSnapshot(q, async (snapshot) => {
-      console.log('📬 Snapshot reçu:', snapshot.size, 'notification(s) non lue(s)');
+      console.log('📬 Snapshot reçu:', snapshot.size, 'notification(s) non lue(s)', '| User connecté:', !!store.user);
+      
+      // Vérifier d'abord que l'utilisateur est toujours connecté
+      if (!store.user) {
+        console.log('⚠️ Snapshot reçu mais utilisateur déconnecté - Ne rien faire');
+        return;
+      }
       
       // Ne traiter que les nouvelles notifications (ajouts)
       snapshot.docChanges().forEach(async (change) => {
@@ -431,21 +464,34 @@ const setupNotificationListener = async (userEmail: string) => {
           
           console.log('📩 Nouvelle notification détectée:', notif);
           
-          // Afficher immédiatement dans un toast
-          const toast = await toastController.create({
-            message: `${notif.titre}: ${notif.message}`,
-            duration: 6000,
-            position: 'top',
-            color: 'primary',
-            buttons: [
-              {
-                text: 'OK',
-                role: 'cancel'
-              }
-            ]
-          });
+          // Vérifier que l'utilisateur est toujours connecté
+          if (!store.user) {
+            console.log('⏭️ Utilisateur déconnecté, notification ignorée');
+            return;
+          }
           
-          await toast.present();
+          // Afficher immédiatement dans un toast
+          try {
+            console.log('🎨 Création du toast en temps réel pour:', notif.titre);
+            const toast = await toastController.create({
+              message: `${notif.titre}: ${notif.message}`,
+              duration: 6000,
+              position: 'top',
+              color: 'primary',
+              buttons: [
+                {
+                  text: 'OK',
+                  role: 'cancel'
+                }
+              ]
+            });
+            
+            console.log('🎨 Toast créé, présentation...');
+            await toast.present();
+            console.log('✅ Toast affiché en temps réel');
+          } catch (err) {
+            console.error('❌ Erreur affichage toast temps réel:', err);
+          }
           
           // Marquer comme lue après un court délai
           setTimeout(async () => {
@@ -481,8 +527,8 @@ const checkUnreadNotifications = async (userEmail: string) => {
     const q = query(
       notificationsRef,
       where('userEmail', '==', userEmail),
-      where('lue', '==', false),
-      orderBy('dateCreation', 'desc')
+      where('lue', '==', false)
+      // orderBy('dateCreation', 'desc') -- Temporairement désactivé en attendant l'index
     );
     
     const snapshot = await getDocs(q);
@@ -492,29 +538,45 @@ const checkUnreadNotifications = async (userEmail: string) => {
       return;
     }
     
+    // Trier les notifications par date (plus récente en premier) côté client
+    const notifications = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .sort((a: any, b: any) => {
+        const dateA = new Date(a.dateCreation).getTime();
+        const dateB = new Date(b.dateCreation).getTime();
+        return dateB - dateA; // Plus récente en premier
+      });
+    
     // Afficher chaque notification et la marquer comme lue
-    for (const docSnap of snapshot.docs) {
-      const notif = docSnap.data();
-      console.log('📩 Affichage notification:', notif);
+    for (const notif of notifications) {
+      const notifData = notif as any; // Cast pour TypeScript
+      console.log('📩 Affichage notification:', notifData);
       
       // Afficher un toast pour chaque notification
-      const toast = await toastController.create({
-        message: `${notif.titre}: ${notif.message}`,
-        duration: 5000,
-        position: 'top',
-        color: 'primary',
-        buttons: [
-          {
-            text: 'OK',
-            role: 'cancel'
-          }
-        ]
-      });
-      
-      await toast.present();
+      try {
+        console.log('🎨 Création du toast pour:', notifData.titre);
+        const toast = await toastController.create({
+          message: `${notifData.titre}: ${notifData.message}`,
+          duration: 5000,
+          position: 'top',
+          color: 'primary',
+          buttons: [
+            {
+              text: 'OK',
+              role: 'cancel'
+            }
+          ]
+        });
+        
+        console.log('🎨 Toast créé, présentation...');
+        await toast.present();
+        console.log('✅ Toast affiché');
+      } catch (err) {
+        console.error('❌ Erreur affichage toast:', err);
+      }
       
       // Marquer comme lue
-      await updateDoc(doc(db, 'notifications', docSnap.id), {
+      await updateDoc(doc(db, 'notifications', notifData.id), {
         lue: true,
         dateLecture: new Date().toISOString()
       });
@@ -677,17 +739,40 @@ const handleLogin = async () => {
   }
 };
 
-const handleLogout = () => {
-  // Désactiver le listener notifications
-  if (unsubscribeNotifications) {
-    console.log('🔕 Désactivation du listener lors de la déconnexion');
-    unsubscribeNotifications();
-    unsubscribeNotifications = null;
+const handleLogout = async () => {
+  console.log('🚪 Déconnexion en cours...');
+  
+  // 1. Supprimer le token FCM côté Firestore pour bloquer TOUTES les notifications
+  if (store.user && store.user.postgresId) {
+    try {
+      const userDocRef = doc(db, 'utilisateurs', store.user.postgresId);
+      await updateDoc(userDocRef, {
+        fcmToken: null,
+        fcmTokenStatus: 'logged_out',
+        fcmTokenDate: new Date().toISOString()
+      });
+      console.log('✅ Token FCM supprimé - Notifications backend bloquées');
+    } catch (err) {
+      console.error('❌ Erreur suppression token FCM:', err);
+    }
   }
   
+  // 2. Désactiver le listener Firestore
+  if (unsubscribeNotifications) {
+    console.log('🔕 Désactivation du listener Firestore');
+    unsubscribeNotifications();
+    unsubscribeNotifications = null;
+    console.log('✅ Listener Firestore désactivé');
+  } else {
+    console.log('ℹ️ Aucun listener Firestore à désactiver');
+  }
+  
+  // 3. Déconnexion locale
   setUser(null);
   localStorage.removeItem('app_user');
   filterMine.value = false;
+  
+  console.log('✅ Déconnexion terminée - Mode visiteur (aucune notification)');
 };
 
 // Map & Signalement Methods
@@ -907,17 +992,23 @@ const scrollCarousel = (direction: 'left' | 'right') => {
 };
 
 onMounted(async () => {
-  // 1. Écouter les notifications FCM en premier plan (avec toast au lieu d'alert)
+  // 1. Écouter les notifications FCM en premier plan (SEULEMENT si connecté)
   try {
     const messaging = await getMessaging();
     if (messaging) {
       onMessage(messaging, async (payload) => {
         console.log('🔔 Notification FCM reçue en premier plan:', payload);
         
+        // Vérifier que l'utilisateur est connecté
+        if (!store.user) {
+          console.log('⏭️ Notification FCM reçue mais utilisateur non connecté, ignorée');
+          return;
+        }
+        
         const titre = payload.notification?.title || 'Notification';
         const body = payload.notification?.body || 'Vous avez une nouvelle notification';
         
-        // Afficher dans un toast au lieu d'alert
+        // Afficher dans un toast
         const toast = await toastController.create({
           message: `${titre}: ${body}`,
           duration: 6000,
@@ -933,7 +1024,7 @@ onMounted(async () => {
         
         await toast.present();
       });
-      console.log('✅ Listener FCM foreground activé');
+      console.log('✅ Listener FCM foreground configuré (attente connexion)');
     }
   } catch (err) {
     console.warn("⚠️ Erreur lors de l'initialisation du listener FCM:", err);
