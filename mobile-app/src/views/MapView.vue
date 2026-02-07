@@ -236,6 +236,7 @@ import {
 } from 'firebase/firestore';
 import { getToken, getMessaging, onMessage } from 'firebase/messaging';
 import { PushNotifications } from '@capacitor/push-notifications';
+import { Haptics } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
 import { db } from '../firebase/config';
 import { store, setUser } from '../store';
@@ -473,18 +474,57 @@ const setupNotificationListener = async (userEmail: string) => {
           // Afficher immédiatement dans un toast
           try {
             console.log('🎨 Création du toast en temps réel pour:', notif.titre);
+            
+            // Déterminer l'icône et la couleur selon le statut
+            let icon = '🔔';
+            let color = 'primary';
+            const message = notif.message.toLowerCase();
+            
+            if (message.includes('approuvé')) {
+              icon = '✅';
+              color = 'success';
+            } else if (message.includes('rejeté')) {
+              icon = '❌';
+              color = 'danger';
+            } else if (message.includes('en cours')) {
+              icon = '🔧';
+              color = 'warning';
+            } else if (message.includes('résolu')) {
+              icon = '🎉';
+              color = 'success';
+            }
+            
             const toast = await toastController.create({
-              message: `${notif.titre}: ${notif.message}`,
-              duration: 6000,
+              header: notif.titre,
+              message: `${icon} ${notif.message}`,
+              duration: 7000,
               position: 'top',
-              color: 'primary',
+              color: color,
+              cssClass: 'notification-toast',
               buttons: [
                 {
-                  text: 'OK',
+                  text: 'Voir',
+                  role: 'info',
+                  handler: () => {
+                    console.log('👉 Navigation vers signalement:', notif.signalementId);
+                    // TODO: Naviguer vers le détail du signalement
+                  }
+                },
+                {
+                  text: 'Fermer',
                   role: 'cancel'
                 }
               ]
             });
+            
+            // Vibration sur mobile pour attirer l'attention
+            if (Capacitor.isNativePlatform()) {
+              try {
+                await Haptics.vibrate({ duration: 200 });
+              } catch (e) {
+                console.log('⚠️ Vibration non disponible');
+              }
+            }
             
             console.log('🎨 Toast créé, présentation...');
             await toast.present();
@@ -548,32 +588,68 @@ const checkUnreadNotifications = async (userEmail: string) => {
       });
     
     // Afficher chaque notification et la marquer comme lue
+    let delayMs = 0;
     for (const notif of notifications) {
       const notifData = notif as any; // Cast pour TypeScript
       console.log('📩 Affichage notification:', notifData);
       
-      // Afficher un toast pour chaque notification
-      try {
-        console.log('🎨 Création du toast pour:', notifData.titre);
-        const toast = await toastController.create({
-          message: `${notifData.titre}: ${notifData.message}`,
-          duration: 5000,
-          position: 'top',
-          color: 'primary',
-          buttons: [
-            {
-              text: 'OK',
-              role: 'cancel'
-            }
-          ]
-        });
-        
-        console.log('🎨 Toast créé, présentation...');
-        await toast.present();
-        console.log('✅ Toast affiché');
-      } catch (err) {
-        console.error('❌ Erreur affichage toast:', err);
-      }
+      // Afficher un toast pour chaque notification avec un délai progressif
+      setTimeout(async () => {
+        try {
+          console.log('🎨 Création du toast pour:', notifData.titre);
+          
+          // Déterminer l'icône et la couleur selon le statut
+          let icon = '🔔';
+          let color = 'primary';
+          const message = notifData.message.toLowerCase();
+          
+          if (message.includes('approuvé')) {
+            icon = '✅';
+            color = 'success';
+          } else if (message.includes('rejeté')) {
+            icon = '❌';
+            color = 'danger';
+          } else if (message.includes('en cours')) {
+            icon = '🔧';
+            color = 'warning';
+          } else if (message.includes('résolu')) {
+            icon = '🎉';
+            color = 'success';
+          }
+          
+          const toast = await toastController.create({
+            header: notifData.titre,
+            message: `${icon} ${notifData.message}`,
+            duration: 5000,
+            position: 'top',
+            color: color,
+            cssClass: 'notification-toast',
+            buttons: [
+              {
+                text: 'Voir',
+                role: 'info',
+                handler: () => {
+                  console.log('👉 Navigation vers signalement:', notifData.signalementId);
+                  // TODO: Naviguer vers le détail du signalement
+                }
+              },
+              {
+                text: 'OK',
+                role: 'cancel'
+              }
+            ]
+          });
+          
+          console.log('🎨 Toast créé, présentation...');
+          await toast.present();
+          console.log('✅ Toast affiché');
+        } catch (err) {
+          console.error('❌ Erreur affichage toast:', err);
+        }
+      }, delayMs);
+      
+      // Incrémenter le délai pour éviter le chevauchement
+      delayMs += 800;
       
       // Marquer comme lue
       await updateDoc(doc(db, 'notifications', notifData.id), {
@@ -1071,5 +1147,45 @@ onUnmounted(() => {
 }
 .leaflet-popup-tip {
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* Custom Notification Toast Styling */
+.notification-toast {
+  --border-radius: 16px;
+  --box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+}
+
+.notification-toast::part(header) {
+  font-weight: 700;
+  font-size: 14px;
+  padding-bottom: 4px;
+}
+
+.notification-toast::part(message) {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.notification-toast::part(button) {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+/* Animation pour les toasts */
+@keyframes slideInTop {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.notification-toast {
+  animation: slideInTop 0.3s ease-out;
 }
 </style>

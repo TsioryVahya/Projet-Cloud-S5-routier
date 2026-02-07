@@ -1,1 +1,2 @@
 npm install @capacitor/local-notifications @capacitor/app @capacitor/core
+npm install @capacitor/haptics
