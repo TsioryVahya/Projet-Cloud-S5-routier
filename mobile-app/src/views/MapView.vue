@@ -193,7 +193,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed, watch, onUnmounted } from 'vue';
 import { IonPage, IonContent, IonIcon } from '@ionic/vue';
 
 interface TypeSignalement {
@@ -250,6 +250,9 @@ const loginEmail = ref('');
 const loginPassword = ref('');
 const authError = ref('');
 const isAuthLoading = ref(false);
+
+// Listener en temps réel sur les notifications
+let unsubscribeNotifications: (() => void) | null = null;
 
 // FCM Logic
 const requestFcmToken = async (userDocRef: any) => {
@@ -384,6 +387,87 @@ const requestFcmToken = async (userDocRef: any) => {
     if (err.message.includes('push service error')) {
       console.warn("Le service de push du navigateur a échoué. Essayez de redémarrer le navigateur ou vérifiez votre connexion internet.");
     }
+  }
+};
+
+// Listener en temps réel sur les notifications
+const setupNotificationListener = async (userEmail: string) => {
+  try {
+    console.log('🔔 Configuration du listener temps réel pour:', userEmail);
+    
+    // Désactiver l'ancien listener s'il existe
+    if (unsubscribeNotifications) {
+      unsubscribeNotifications();
+    }
+    
+    const notificationsRef = collection(db, 'notifications');
+    const q = query(
+      notificationsRef,
+      where('userEmail', '==', userEmail),
+      where('lue', '==', false),
+      orderBy('dateCreation', 'desc')
+    );
+    
+    // Écouter les nouvelles notifications en temps réel
+    unsubscribeNotifications = onSnapshot(q, async (snapshot) => {
+      console.log('📬 Snapshot reçu:', snapshot.size, 'notification(s) non lue(s)');
+      
+      // Ne traiter que les nouvelles notifications (ajouts)
+      snapshot.docChanges().forEach(async (change) => {
+        if (change.type === 'added') {
+          const notif = change.doc.data();
+          const notifId = change.doc.id;
+          
+          // Vérifier si c'est une notification vraiment nouvelle (créée il y a moins de 10 secondes)
+          const dateCreation = new Date(notif.dateCreation);
+          const now = new Date();
+          const diffSeconds = (now.getTime() - dateCreation.getTime()) / 1000;
+          
+          // Ne traiter que les notifications récentes pour éviter d'afficher les anciennes au chargement
+          if (diffSeconds > 10) {
+            console.log('⏭️ Notification trop ancienne, ignorée:', diffSeconds, 'secondes');
+            return;
+          }
+          
+          console.log('📩 Nouvelle notification détectée:', notif);
+          
+          // Afficher immédiatement dans un toast
+          const toast = await toastController.create({
+            message: `${notif.titre}: ${notif.message}`,
+            duration: 6000,
+            position: 'top',
+            color: 'primary',
+            buttons: [
+              {
+                text: 'OK',
+                role: 'cancel'
+              }
+            ]
+          });
+          
+          await toast.present();
+          
+          // Marquer comme lue après un court délai
+          setTimeout(async () => {
+            try {
+              await updateDoc(doc(db, 'notifications', notifId), {
+                lue: true,
+                dateLecture: new Date().toISOString()
+              });
+              console.log('✅ Notification marquée comme lue:', notifId);
+            } catch (err) {
+              console.error('❌ Erreur marquage notification:', err);
+            }
+          }, 1000);
+        }
+      });
+    }, (error) => {
+      console.error('❌ Erreur listener notifications:', error);
+    });
+    
+    console.log('✅ Listener notifications activé');
+  } catch (error) {
+    console.error('❌ Erreur setup listener:', error);
   }
 };
 
@@ -562,6 +646,9 @@ const handleLogin = async () => {
       // Vérifier les notifications non lues après connexion
       await checkUnreadNotifications(appUser.email);
       
+      // Activer le listener temps réel sur les notifications
+      await setupNotificationListener(appUser.email);
+      
       showLoginModal.value = false;
       loginEmail.value = '';
       loginPassword.value = '';
@@ -591,6 +678,13 @@ const handleLogin = async () => {
 };
 
 const handleLogout = () => {
+  // Désactiver le listener notifications
+  if (unsubscribeNotifications) {
+    console.log('🔕 Désactivation du listener lors de la déconnexion');
+    unsubscribeNotifications();
+    unsubscribeNotifications = null;
+  }
+  
   setUser(null);
   localStorage.removeItem('app_user');
   filterMine.value = false;
@@ -813,32 +907,67 @@ const scrollCarousel = (direction: 'left' | 'right') => {
 };
 
 onMounted(async () => {
-  // Écouter les notifications en premier plan
+  // 1. Écouter les notifications FCM en premier plan (avec toast au lieu d'alert)
   try {
     const messaging = await getMessaging();
-    onMessage(messaging, (payload) => {
-      console.log('Notification reçue en premier plan:', payload);
-      alert(`${payload.notification?.title}\n\n${payload.notification?.body}`);
-    });
+    if (messaging) {
+      onMessage(messaging, async (payload) => {
+        console.log('🔔 Notification FCM reçue en premier plan:', payload);
+        
+        const titre = payload.notification?.title || 'Notification';
+        const body = payload.notification?.body || 'Vous avez une nouvelle notification';
+        
+        // Afficher dans un toast au lieu d'alert
+        const toast = await toastController.create({
+          message: `${titre}: ${body}`,
+          duration: 6000,
+          position: 'top',
+          color: 'success',
+          buttons: [
+            {
+              text: 'OK',
+              role: 'cancel'
+            }
+          ]
+        });
+        
+        await toast.present();
+      });
+      console.log('✅ Listener FCM foreground activé');
+    }
   } catch (err) {
-    console.warn("Erreur lors de l'initialisation du listener onMessage:", err);
+    console.warn("⚠️ Erreur lors de l'initialisation du listener FCM:", err);
   }
 
-  // Auth & Token logic
+  // 2. Auth & Token logic
   if (store.user && store.user.postgresId) {
     try {
       const userDocRef = doc(db, 'utilisateurs', store.user.postgresId);
-      requestFcmToken(userDocRef);
+      await requestFcmToken(userDocRef);
+      
+      // 3. Configurer le listener temps réel sur les notifications
+      if (store.user.email) {
+        await setupNotificationListener(store.user.email);
+      }
     } catch (err) {
-      console.error("Erreur lors de la récupération du token au montage:", err);
+      console.error("❌ Erreur lors de la récupération du token au montage:", err);
     }
   }
 
+  // 4. Initialiser la carte
   setTimeout(() => {
     initMap();
-    updateMarkers(); // Initial render if data already exists
+    updateMarkers();
     fetchTypesSignalement();
   }, 100);
+});
+
+// Nettoyer le listener lors du démontage
+onUnmounted(() => {
+  if (unsubscribeNotifications) {
+    console.log('🔕 Désactivation du listener notifications');
+    unsubscribeNotifications();
+  }
 });
 </script>
 
