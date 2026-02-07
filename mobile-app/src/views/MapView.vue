@@ -901,6 +901,7 @@ const submitReport = async () => {
       description: reportDescription.value,
       photo_url: reportPhotoUrl.value,
       utilisateur_id: store.user.postgresId,
+      email: store.user.email,
       id_type_signalement: selectedTypeId.value,
       statut: 'nouveau',
       entreprise: null,
