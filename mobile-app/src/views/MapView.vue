@@ -218,7 +218,10 @@ import {
   chevronBackOutline,
   chevronForwardOutline,
   cameraOutline,
-  trashOutline
+  trashOutline,
+  notificationsOutline, 
+  checkmarkCircleOutline,
+  alertCircleOutline
 } from 'ionicons/icons';
 import * as L from 'leaflet';
 import { 
@@ -254,6 +257,29 @@ const isAuthLoading = ref(false);
 
 // Listener en temps réel sur les notifications
 let unsubscribeNotifications: (() => void) | null = null;
+
+const showModernToast = async (title: string, body: string, type: 'info' | 'success' | 'warning' = 'info') => {
+  const icon = type === 'success' ? checkmarkCircleOutline : (type === 'warning' ? alertCircleOutline : notificationsOutline);
+  const color = type === 'success' ? 'success' : (type === 'warning' ? 'warning' : 'primary');
+
+  const toast = await toastController.create({
+    header: title,
+    message: body,
+    duration: 5000,
+    position: 'top',
+    animated: true,
+    icon: icon,
+    color: color,
+    cssClass: 'modern-notification-toast',
+    buttons: [
+      {
+        text: 'OK',
+        role: 'cancel'
+      }
+    ]
+  });
+  await toast.present();
+};
 
 // FCM Logic
 const requestFcmToken = async (userDocRef: any) => {
@@ -309,31 +335,17 @@ const requestFcmToken = async (userDocRef: any) => {
         });
       });
 
-      // 5. Écouter les notifications reçues en foreground (quand l'app est ouverte)
-      PushNotifications.addListener('pushNotificationReceived', async (notification) => {
-        console.log('📱 Push reçue (native foreground):', notification);
+      // 5. Écouter les notifications reçues (Optionnel ici car géré par le plugin)
+      PushNotifications.addListener('pushNotificationReceived', (notification) => {
+        console.log('Push reçue (native):', notification);
         
-        // Vérifier que l'utilisateur est connecté
-        if (!store.user) {
-          console.log('⏭️ Notification native reçue mais utilisateur non connecté, ignorée');
-          return;
-        }
-        
-        // Afficher dans un toast au lieu d'alert
-        const toast = await toastController.create({
-          message: `${notification.title}: ${notification.body}`,
-          duration: 6000,
-          position: 'top',
-          color: 'success',
-          buttons: [
-            {
-              text: 'OK',
-              role: 'cancel'
-            }
-          ]
-        });
-        
-        await toast.present();
+        if (!store.user) return;
+
+        showModernToast(
+          notification.title || 'Mise à jour',
+          notification.body || 'Un changement a été détecté',
+          'info'
+        );
       });
 
       // 6. Écouter les clics sur les notifications
@@ -1073,33 +1085,16 @@ onMounted(async () => {
   try {
     const messaging = await getMessaging();
     if (messaging) {
-      onMessage(messaging, async (payload) => {
+      onMessage(messaging, (payload) => {
         console.log('🔔 Notification FCM reçue en premier plan:', payload);
         
-        // Vérifier que l'utilisateur est connecté
-        if (!store.user) {
-          console.log('⏭️ Notification FCM reçue mais utilisateur non connecté, ignorée');
-          return;
+        if (store.user) {
+          showModernToast(
+            payload.notification?.title || 'Mise à jour',
+            payload.notification?.body || 'Un changement a été détecté',
+            'info'
+          );
         }
-        
-        const titre = payload.notification?.title || 'Notification';
-        const body = payload.notification?.body || 'Vous avez une nouvelle notification';
-        
-        // Afficher dans un toast
-        const toast = await toastController.create({
-          message: `${titre}: ${body}`,
-          duration: 6000,
-          position: 'top',
-          color: 'success',
-          buttons: [
-            {
-              text: 'OK',
-              role: 'cancel'
-            }
-          ]
-        });
-        
-        await toast.present();
       });
       console.log('✅ Listener FCM foreground configuré (attente connexion)');
     }
@@ -1141,6 +1136,22 @@ onUnmounted(() => {
 
 <style>
 /* Leaflet Popup Styling */
+.modern-notification-toast {
+  --border-radius: 12px;
+  --box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  font-family: 'Inter', sans-serif;
+}
+
+.modern-notification-toast::part(header) {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.modern-notification-toast::part(message) {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
 .leaflet-popup-content-wrapper {
   border-radius: 16px;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
