@@ -410,10 +410,20 @@ const handleLogin = async () => {
   }
 };
 
-const handleLogout = () => {
+const handleLogout = async () => {
   setUser(null);
   localStorage.removeItem('app_user');
   filterMine.value = false;
+  
+  // Nettoyer les notifications
+  notificationService.cleanup();
+  
+  // Se déconnecter de Firebase Auth si nécessaire
+  try {
+    await auth.signOut();
+  } catch (error) {
+    console.warn('⚠️ Erreur lors de la déconnexion Firebase Auth:', error);
+  }
 };
 
 // Map & Signalement Methods
