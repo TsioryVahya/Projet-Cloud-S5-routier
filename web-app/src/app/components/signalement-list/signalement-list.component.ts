@@ -1,14 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { SignalementService } from '../../services/signalement.service';
 import { Signalement, StatutSignalement, TypeSignalement } from '../../models/signalement.model';
 
 @Component({
   selector: 'app-signalement-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './signalement-list.component.html',
   styleUrls: ['./signalement-list.component.css']
 })
@@ -21,10 +21,8 @@ export class SignalementListComponent implements OnInit {
   entreprises: any[] = [];
   
   // Modal States
-  showEditModal = false;
   showPhotoModal = false;
   selectedPhotoUrl = '';
-  editingSignalement: any = null;
   isSaving = false;
 
   // State for synchronization
@@ -33,7 +31,8 @@ export class SignalementListComponent implements OnInit {
 
   constructor(
     private signalementService: SignalementService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -128,45 +127,9 @@ export class SignalementListComponent implements OnInit {
     });
   }
 
-  openEditModal(signalement: Signalement): void {
-    // Trouver l'ID du statut correspondant au nom du statut
-    const signalementStatut = String(signalement.statut || '').toLowerCase();
-    const currentStatus = this.statuses.find(st => String(st.nom || '').toLowerCase() === signalementStatut);
-    
-    this.editingSignalement = {
-      id: signalement.postgresId || signalement.id,
-      latitude: signalement.latitude,
-      longitude: signalement.longitude,
-      statutId: currentStatus ? currentStatus.id : 1, // Fallback au premier statut si non trouvé
-      description: signalement.description || '',
-      budget: signalement.budget || 0,
-      surfaceM2: signalement.surfaceM2 || 0,
-      entrepriseConcerne: signalement.entrepriseNom || signalement.entrepriseConcerne || '',
-      photoUrl: signalement.photoUrl || ''
-    };
-    this.showEditModal = true;
-  }
-
-  closeEditModal(): void {
-    this.showEditModal = false;
-    this.editingSignalement = null;
-  }
-
-  saveSignalement(): void {
-    if (!this.editingSignalement) return;
-    
-    this.isSaving = true;
-    this.signalementService.updateSignalement(this.editingSignalement.id, this.editingSignalement).subscribe({
-      next: () => {
-        this.isSaving = false;
-        this.closeEditModal();
-        this.loadSignalements();
-      },
-      error: (err) => {
-        console.error(err);
-        this.isSaving = false;
-      }
-    });
+  openEditPage(signalement: Signalement): void {
+    const id = signalement.postgresId || signalement.id;
+    this.router.navigate(['/dashboard/signalements/edit', id]);
   }
 
   onStatusChange(signalement: Signalement, newStatusId: string): void {
@@ -247,6 +210,4 @@ export class SignalementListComponent implements OnInit {
       });
     }
   }
-
-  // Autres méthodes pour éditer ou changer le statut...
 }

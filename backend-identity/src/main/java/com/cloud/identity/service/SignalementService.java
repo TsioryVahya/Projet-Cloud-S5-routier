@@ -13,6 +13,8 @@ import com.cloud.identity.repository.SignalementsDetailRepository;
 import com.cloud.identity.repository.StatutsSignalementRepository;
 import com.cloud.identity.repository.TypeSignalementRepository;
 import com.cloud.identity.repository.UtilisateurRepository;
+import com.cloud.identity.events.SignalementSavedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +29,9 @@ import java.util.stream.Collectors;
 
 @Service
 public class SignalementService {
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     @Autowired
     private SignalementRepository signalementRepository;
@@ -240,8 +245,8 @@ public class SignalementService {
         s.setDetails(details);
         detailsRepository.save(details);
 
-        // Synchronisation Firebase
-        firestoreSyncService.syncSignalementToFirebase(s);
+        // Publication de l'événement pour synchronisation Firebase (Async)
+        eventPublisher.publishEvent(new SignalementSavedEvent(this, s));
     }
 
     @Transactional
@@ -398,6 +403,8 @@ public class SignalementService {
         
         s.setStatut(statutEnCours);
         signalementRepository.save(s);
-        // La mise à jour Firebase est maintenant automatique via SignalementEntityListener
+        
+        // Publication de l'événement pour synchronisation Firebase (Async)
+        eventPublisher.publishEvent(new SignalementSavedEvent(this, s));
     }
 }

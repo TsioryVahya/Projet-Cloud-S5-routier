@@ -21,6 +21,10 @@ export const routes: Routes = [
         path: 'signalements', 
         loadComponent: () => import('./components/signalement-list/signalement-list.component').then(m => m.SignalementListComponent) 
       },
+      {
+        path: 'signalements/edit/:id',
+        loadComponent: () => import('./components/signalement-edit/signalement-edit.component').then(m => m.SignalementEditComponent)
+      },
       { 
         path: 'users', 
         loadComponent: () => import('./components/user-list/user-list.component').then(m => m.UserListComponent) 
