@@ -11,6 +11,7 @@ import com.cloud.identity.repository.EntrepriseRepository;
 import com.cloud.identity.repository.SignalementRepository;
 import com.cloud.identity.repository.SignalementsDetailRepository;
 import com.cloud.identity.repository.StatutsSignalementRepository;
+import com.cloud.identity.repository.TypeSignalementRepository;
 import com.cloud.identity.repository.UtilisateurRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -41,6 +42,9 @@ public class SignalementService {
 
     @Autowired
     private UtilisateurRepository utilisateurRepository;
+
+    @Autowired
+    private TypeSignalementRepository typeRepository;
 
     @Autowired
     private FirestoreSyncService firestoreSyncService;
@@ -136,7 +140,7 @@ public class SignalementService {
 
     @Transactional
     public void creerSignalement(Double latitude, Double longitude, String description, String email,
-                                 Double surfaceM2, BigDecimal budget, String entrepriseNom, String photoUrl) throws Exception {
+                                 Double surfaceM2, BigDecimal budget, String entrepriseNom, String photoUrl, Integer typeId) throws Exception {
         Utilisateur utilisateur = utilisateurRepository.findByEmail(email)
                 .orElseThrow(() -> new Exception("Utilisateur non trouvé"));
 
@@ -149,6 +153,10 @@ public class SignalementService {
         s.setStatut(statut);
         s.setUtilisateur(utilisateur);
         s.setDateSignalement(Instant.now());
+
+        if (typeId != null) {
+            typeRepository.findById(typeId).ifPresent(s::setType);
+        }
 
         signalementRepository.save(s);
 
@@ -170,8 +178,8 @@ public class SignalementService {
         
         details.setPhotoUrl(photoUrl);
         
-        detailsRepository.save(details);
         s.setDetails(details);
+        detailsRepository.save(details);
 
         // Synchronisation Firebase
         String idFirebase = firestoreSyncService.createSignalementInFirestore(s, details);
@@ -184,7 +192,7 @@ public class SignalementService {
     @Transactional
     public void modifierSignalement(UUID id, Double latitude, Double longitude, Integer statutId,
                                     String description, Double surfaceM2, BigDecimal budget,
-                                    String entrepriseNom, String photoUrl) throws Exception {
+                                    String entrepriseNom, String photoUrl, Integer typeId) throws Exception {
         Signalement s = signalementRepository.findById(id)
                 .orElseThrow(() -> new Exception("Signalement non trouvé"));
         
@@ -194,6 +202,10 @@ public class SignalementService {
         s.setLatitude(latitude);
         s.setLongitude(longitude);
         s.setStatut(statut);
+
+        if (typeId != null) {
+            typeRepository.findById(typeId).ifPresent(s::setType);
+        }
 
         signalementRepository.save(s);
 

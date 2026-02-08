@@ -15,6 +15,11 @@
           </ion-badge>
           <ion-label class="hidden-label">Liste</ion-label>
         </ion-tab-button>
+
+        <ion-tab-button tab="my-reports" href="/tabs/my-reports">
+          <ion-icon :icon="personOutline" />
+          <ion-label class="hidden-label">Moi</ion-label>
+        </ion-tab-button>
       </ion-tab-bar>
     </ion-tabs>
   </ion-page>
@@ -22,7 +27,7 @@
 
 <script setup lang="ts">
 import { IonPage, IonTabs, IonRouterOutlet, IonTabBar, IonTabButton, IonIcon, IonLabel, IonBadge } from '@ionic/vue';
-import { mapOutline, listOutline } from 'ionicons/icons';
+import { mapOutline, listOutline, personOutline } from 'ionicons/icons';
 import { store } from '../store';
 </script>
 

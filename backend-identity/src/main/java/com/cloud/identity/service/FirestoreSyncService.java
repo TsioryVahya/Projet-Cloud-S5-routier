@@ -155,17 +155,17 @@ public class FirestoreSyncService {
                     userOpt = utilisateurRepository.findByEmail(email);
                 }
 
-                Utilisateur user;
+                Utilisateur userToSync;
                 boolean isNew = false;
 
                 if (userOpt.isPresent()) {
-                    user = userOpt.get();
+                    userToSync = userOpt.get();
                     
                     // --- LOGIQUE DE COMPARAISON DES DATES (Solution 2) ---
-                    com.google.cloud.Timestamp firestoreTime = document.getTimestamp("date_derniere_modification");
-                    if (firestoreTime != null && user.getDateDerniereModification() != null) {
-                        java.time.Instant firestoreInstant = firestoreTime.toSqlTimestamp().toInstant();
-                        java.time.Instant postgresInstant = user.getDateDerniereModification();
+                    com.google.cloud.Timestamp firestoreTimeMod = document.getTimestamp("date_derniere_modification");
+                    if (firestoreTimeMod != null && userToSync.getDateDerniereModification() != null) {
+                        java.time.Instant firestoreInstant = firestoreTimeMod.toSqlTimestamp().toInstant();
+                        java.time.Instant postgresInstant = userToSync.getDateDerniereModification();
                         
                         // Si Postgres est plus récent, on ignore l'import pour cet utilisateur
                         if (postgresInstant.isAfter(firestoreInstant)) {
@@ -174,53 +174,53 @@ public class FirestoreSyncService {
                         }
                     }
                 } else {
-                    user = new Utilisateur();
+                    userToSync = new Utilisateur();
                     // Si on a un postgresIdStr mais qu'il n'existe pas en base, on peut soit l'ignorer, 
                     // soit le créer avec cet ID. Ici on le crée avec cet ID si possible.
                     if (postgresIdStr != null && !postgresIdStr.isEmpty()) {
                         try {
-                            user.setId(java.util.UUID.fromString(postgresIdStr));
+                            userToSync.setId(java.util.UUID.fromString(postgresIdStr));
                         } catch (Exception e) {}
                     }
-                    user.setEmail(email);
-                    user.setDateCreation(java.time.Instant.now());
-                    user.setRole(roleRepository.findByNom("UTILISATEUR").orElse(null));
+                    userToSync.setEmail(email);
+                    userToSync.setDateCreation(java.time.Instant.now());
+                    userToSync.setRole(roleRepository.findByNom("UTILISATEUR").orElse(null));
                     isNew = true;
                 }
 
                 // Mettre à jour l'email au cas où il aurait changé
-                user.setEmail(email);
+                userToSync.setEmail(email);
 
                 // Synchroniser le mot de passe si présent
                 if (document.getString("motDePasse") != null) {
-                    user.setMotDePasse(document.getString("motDePasse"));
+                    userToSync.setMotDePasse(document.getString("motDePasse"));
                 } else if (isNew) {
-                    user.setMotDePasse("default_password");
+                    userToSync.setMotDePasse("default_password");
                 }
 
                 // Synchroniser le statut depuis Firestore
                 String firestoreStatut = document.getString("statut");
                 if (firestoreStatut != null) {
                     final String statusToSearch = firestoreStatut;
-                    user.setStatutActuel(statutUtilisateurRepository.findByNom(statusToSearch)
+                    userToSync.setStatutActuel(statutUtilisateurRepository.findByNom(statusToSearch)
                             .orElseGet(() -> statutUtilisateurRepository.findByNom("ACTIF").orElse(null)));
                 } else if (isNew) {
-                    user.setStatutActuel(statutUtilisateurRepository.findByNom("ACTIF").orElse(null));
+                    userToSync.setStatutActuel(statutUtilisateurRepository.findByNom("ACTIF").orElse(null));
                 }
 
                 // Synchroniser les tentatives de connexion
                 Long tentatives = document.getLong("tentatives_connexion");
                 if (tentatives != null) {
-                    user.setTentativesConnexion(tentatives.intValue());
+                    userToSync.setTentativesConnexion(tentatives.intValue());
                 }
 
                 // Mettre à jour la date de modification locale avec celle de Firestore
-                com.google.cloud.Timestamp firestoreTime = document.getTimestamp("date_derniere_modification");
-                if (firestoreTime != null) {
-                    user.setDateDerniereModification(firestoreTime.toSqlTimestamp().toInstant());
+                com.google.cloud.Timestamp firestoreTimeFinal = document.getTimestamp("date_derniere_modification");
+                if (firestoreTimeFinal != null) {
+                    userToSync.setDateDerniereModification(firestoreTimeFinal.toSqlTimestamp().toInstant());
                 }
 
-                utilisateurRepository.save(user);
+                utilisateurRepository.save(userToSync);
                 if (isNew) createdUsers++;
                 else updatedUsers++;
             }
@@ -752,6 +752,7 @@ public class FirestoreSyncService {
 
             if (signalement.getType() != null) {
                 data.put("type", signalement.getType().getNom());
+                data.put("id_type_signalement", signalement.getType().getId());
             }
 
             if (signalement.getUtilisateur() != null) {
@@ -801,6 +802,7 @@ public class FirestoreSyncService {
 
             if (signalement.getType() != null) {
                 updates.put("type", signalement.getType().getNom());
+                updates.put("id_type_signalement", signalement.getType().getId());
             }
 
             updates.put("postgresId", signalement.getId().toString());

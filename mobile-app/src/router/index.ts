@@ -3,6 +3,7 @@ import { RouteRecordRaw } from 'vue-router';
 import TabsPage from '../views/TabsPage.vue'
 import MapView from '../views/MapView.vue'
 import ListView from '../views/ListView.vue'
+import MyReportsView from '../views/MyReportsView.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -24,6 +25,10 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: 'list',
         component: ListView
+      },
+      {
+        path: 'my-reports',
+        component: MyReportsView
       }
     ]
   }

@@ -260,7 +260,10 @@ let userLocationMarker: L.LayerGroup | null = null;
 
 const filteredSignalements = computed(() => {
   if (filterMine.value && store.user) {
-    return store.signalements.filter(s => s.email === store.user?.email);
+    return store.signalements.filter(s => 
+      s.email === store.user?.email || 
+      s.utilisateur_id === store.user?.postgresId
+    );
   }
   return store.signalements;
 });
@@ -332,12 +335,6 @@ const handleLogin = async () => {
       return;
     }
 
-    const appUser = {
-      email: userData.email,
-      role: userData.role,
-      statut: userData.statut,
-      postgresId: userData.id // On utilise le champ 'id' de Firestore qui contient le UUID
-    };
     // 4. Vérifier le mot de passe
     if (userData.motDePasse === password) {
       // Succès : réinitialiser les tentatives
@@ -352,7 +349,7 @@ const handleLogin = async () => {
         email: userData.email,
         role: userData.role,
         statut: userData.statut,
-        postgresId: userData.postgresId,
+        postgresId: userData.postgresId || userDoc.id, // Priorité au champ postgresId, sinon l'ID du document
         expiresAt: expiresAt
       };
 
@@ -441,6 +438,7 @@ const submitReport = async () => {
       description: reportDescription.value,
       photo_url: reportPhotoUrl.value,
       utilisateur_id: store.user.postgresId,
+      email: store.user.email, // Ajout de l'email pour le filtrage
       id_type_signalement: selectedTypeId.value,
       statut: 'nouveau',
       entreprise: null,

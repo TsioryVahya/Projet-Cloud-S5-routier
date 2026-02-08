@@ -64,8 +64,11 @@ public class SignalementController {
             String entrepriseConcerne = data.get("entrepriseConcerne") != null ? (String) data.get("entrepriseConcerne") : (String) data.get("entreprise_concerne");
             
             String photoUrl = data.get("photoUrl") != null ? (String) data.get("photoUrl") : (String) data.get("photo_url");
+            
+            Integer typeId = data.get("typeId") != null ? Integer.valueOf(data.get("typeId").toString()) : 
+                             (data.get("id_type_signalement") != null ? Integer.valueOf(data.get("id_type_signalement").toString()) : null);
 
-            signalementService.creerSignalement(latitude, longitude, description, email, surfaceM2, budget, entrepriseConcerne, photoUrl);
+            signalementService.creerSignalement(latitude, longitude, description, email, surfaceM2, budget, entrepriseConcerne, photoUrl, typeId);
             return ResponseEntity.ok("Signalement créé avec succès");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -90,8 +93,11 @@ public class SignalementController {
             String entrepriseConcerne = data.get("entrepriseConcerne") != null ? (String) data.get("entrepriseConcerne") : (String) data.get("entreprise_concerne");
             
             String photoUrl = data.get("photoUrl") != null ? (String) data.get("photoUrl") : (String) data.get("photo_url");
+            
+            Integer typeId = data.get("typeId") != null ? Integer.valueOf(data.get("typeId").toString()) : 
+                             (data.get("id_type_signalement") != null ? Integer.valueOf(data.get("id_type_signalement").toString()) : null);
 
-            signalementService.modifierSignalement(id, latitude, longitude, statutId, description, surfaceM2, budget, entrepriseConcerne, photoUrl);
+            signalementService.modifierSignalement(id, latitude, longitude, statutId, description, surfaceM2, budget, entrepriseConcerne, photoUrl, typeId);
             return ResponseEntity.ok("Signalement modifié avec succès");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
