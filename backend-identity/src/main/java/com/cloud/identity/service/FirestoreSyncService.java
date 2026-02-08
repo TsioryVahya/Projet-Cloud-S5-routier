@@ -341,6 +341,19 @@ public class FirestoreSyncService {
             } else {
                 System.out.println("ℹ️ Aucun signalement trouvé dans Firestore avec l'email : " + oldEmail);
             }
+
+            // 3. Mettre à jour l'email dans la collection 'users' (utilisée par le mobile
+            // pour FCM)
+            ApiFuture<QuerySnapshot> futureUsers = firestore.collection("users")
+                    .whereEqualTo("email", oldEmail)
+                    .get();
+
+            List<QueryDocumentSnapshot> userDocs = futureUsers.get().getDocuments();
+            for (QueryDocumentSnapshot document : userDocs) {
+                document.getReference().update("email", newEmail).get();
+                System.out.println(
+                        "✅ Utilisateur (notifications) " + document.getId() + " mis à jour avec le nouvel email");
+            }
         } catch (Exception e) {
             System.err.println("❌ Erreur lors de la mise à jour en cascade des emails Firestore : " + e.getMessage());
             e.printStackTrace();
