@@ -12,6 +12,7 @@ import com.cloud.identity.repository.SignalementRepository;
 import com.cloud.identity.repository.SignalementsDetailRepository;
 import com.cloud.identity.repository.StatutsSignalementRepository;
 import com.cloud.identity.repository.UtilisateurRepository;
+import com.cloud.identity.repository.TypeSignalementRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,8 +24,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import com.cloud.identity.repository.TypeSignalementRepository;
-import com.cloud.identity.repository.UtilisateurRepository;
 
 @Service
 public class SignalementService {
@@ -92,6 +91,7 @@ public class SignalementService {
             dto.setLongitude(s.getLongitude());
             dto.setIdFirebase(s.getIdFirebase());
             dto.setDateSignalement(s.getDateSignalement());
+            dto.setDateDerniereModification(s.getDateDerniereModification());
 
             // On renvoie le NOM du statut pour le dashboard web
             if (s.getStatut() != null) {
@@ -168,7 +168,9 @@ public class SignalementService {
         s.setStatut(statut);
         s.setUtilisateur(utilisateur);
         s.setType(type);
-        s.setDateSignalement(Instant.now());
+        Instant now = Instant.now();
+        s.setDateSignalement(now);
+        s.setDateDerniereModification(now);
 
         signalementRepository.save(s);
 
@@ -204,7 +206,7 @@ public class SignalementService {
     @Transactional
     public void modifierSignalement(UUID id, Double latitude, Double longitude, Integer statutId,
             String description, Double surfaceM2, BigDecimal budget,
-            String entrepriseNom, String photoUrl, Integer typeId) throws Exception {
+            String entrepriseNom, String photoUrl, Integer typeId, Instant dateModification) throws Exception {
         Signalement s = signalementRepository.findById(id)
                 .orElseThrow(() -> new Exception("Signalement non trouvé"));
 
@@ -223,6 +225,7 @@ public class SignalementService {
         s.setLatitude(latitude);
         s.setLongitude(longitude);
         s.setStatut(statut);
+        s.setDateDerniereModification(dateModification != null ? dateModification : Instant.now());
 
         signalementRepository.save(s);
 
@@ -299,13 +302,18 @@ public class SignalementService {
                 } else {
                     s.setDateSignalement(Instant.parse(dateObj.toString()));
                 }
+                s.setDateDerniereModification(s.getDateSignalement());
             } catch (Exception e) {
                 System.err.println("Erreur lors du parsing de la date : " + dto.getDateSignalement()
                         + ". Utilisation de la date actuelle.");
-                s.setDateSignalement(Instant.now());
+                Instant now = Instant.now();
+                s.setDateSignalement(now);
+                s.setDateDerniereModification(now);
             }
         } else {
-            s.setDateSignalement(Instant.now());
+            Instant now = Instant.now();
+            s.setDateSignalement(now);
+            s.setDateDerniereModification(now);
         }
 
         // Gérer le statut
@@ -429,6 +437,7 @@ public class SignalementService {
                 });
 
         s.setStatut(statutEnCours);
+        s.setDateDerniereModification(Instant.now());
         signalementRepository.save(s);
         // La mise à jour Firebase est maintenant automatique via
         // SignalementEntityListener

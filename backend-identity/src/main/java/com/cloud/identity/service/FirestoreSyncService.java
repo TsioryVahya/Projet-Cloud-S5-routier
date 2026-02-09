@@ -1,5 +1,6 @@
 package com.cloud.identity.service;
 
+import com.cloud.identity.entities.Entreprise;
 import com.cloud.identity.entities.Signalement;
 import com.cloud.identity.entities.SignalementsDetail;
 import com.cloud.identity.entities.TypeSignalement;
@@ -45,6 +46,9 @@ public class FirestoreSyncService {
 
     @Autowired
     private TypeSignalementRepository typeSignalementRepository;
+
+    @Autowired
+    private EntrepriseRepository entrepriseRepository;
 
     /**
      * Synchronise les utilisateurs de Firestore vers PostgreSQL.
@@ -308,6 +312,7 @@ public class FirestoreSyncService {
                 s.setLatitude(latitude != null ? latitude : 0.0);
                 s.setLongitude(longitude != null ? longitude : 0.0);
                 s.setDateSignalement(dateSignalement);
+                s.setDateDerniereModification(dateSignalement); // Par défaut la même que la création pour un import initial
 
                 // Gérer le statut
                 String finalStatutNom = (statutNom != null) ? statutNom.toLowerCase() : "nouveau";
@@ -376,7 +381,17 @@ public class FirestoreSyncService {
                 details.setDescription(description);
                 details.setSurfaceM2(surfaceM2);
                 details.setBudget(budget);
-                details.setEntrepriseConcerne(entrepriseConcerne);
+                
+                if (entrepriseConcerne != null && !entrepriseConcerne.isEmpty()) {
+                    final String finalEntrepriseNom = entrepriseConcerne;
+                    details.setEntreprise(entrepriseRepository.findByNom(finalEntrepriseNom)
+                        .orElseGet(() -> {
+                            Entreprise e = new Entreprise();
+                            e.setNom(finalEntrepriseNom);
+                            return entrepriseRepository.save(e);
+                        }));
+                }
+                
                 details.setPhotoUrl(photoUrl);
 
                 s.setDetails(details);
@@ -423,6 +438,8 @@ public class FirestoreSyncService {
             data.put("longitude", signalement.getLongitude());
             data.put("dateSignalement",
                     signalement.getDateSignalement() != null ? signalement.getDateSignalement().toString() : null);
+            data.put("date_derniere_modification",
+                    signalement.getDateDerniereModification() != null ? signalement.getDateDerniereModification().toString() : null);
 
             if (signalement.getStatut() != null) {
                 data.put("statut", signalement.getStatut().getNom());
@@ -447,8 +464,9 @@ public class FirestoreSyncService {
 
                 data.put("budget", details.getBudget() != null ? details.getBudget().toString() : null);
 
-                data.put("entrepriseConcerne", details.getEntrepriseConcerne());
-                data.put("entreprise_concerne", details.getEntrepriseConcerne());
+                String entrepriseNom = details.getEntreprise() != null ? details.getEntreprise().getNom() : null;
+                data.put("entrepriseConcerne", entrepriseNom);
+                data.put("entreprise_concerne", entrepriseNom);
 
                 data.put("photoUrl", details.getPhotoUrl());
                 data.put("photo_url", details.getPhotoUrl());
@@ -479,6 +497,9 @@ public class FirestoreSyncService {
             Map<String, Object> updates = new HashMap<>();
             if (signalement.getStatut() != null) {
                 updates.put("statut", signalement.getStatut().getNom());
+            }
+            if (signalement.getDateDerniereModification() != null) {
+                updates.put("date_derniere_modification", signalement.getDateDerniereModification().toString());
             }
             updates.put("postgresId", signalement.getId().toString());
             updates.put("latitude", signalement.getLatitude());

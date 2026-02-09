@@ -108,7 +108,8 @@ export class SignalementListComponent implements OnInit {
       description: signalement.description || '',
       budget: signalement.budget || 0,
       surfaceM2: signalement.surfaceM2 || 0,
-      entrepriseConcerne: signalement.entrepriseConcerne || ''
+      entrepriseConcerne: signalement.entrepriseConcerne || '',
+      dateModification: new Date().toISOString().slice(0, 16) // Format YYYY-MM-DDTHH:mm
     };
     this.showEditModal = true;
   }
@@ -122,7 +123,15 @@ export class SignalementListComponent implements OnInit {
     if (!this.editingSignalement) return;
     
     this.isSaving = true;
-    this.signalementService.updateSignalement(this.editingSignalement.id, this.editingSignalement).subscribe({
+    
+    // On prépare les données pour l'envoi
+    const updateData = {
+      ...this.editingSignalement,
+      // Conversion de la date locale (YYYY-MM-DDTHH:mm) en ISO String pour le backend
+      dateModification: new Date(this.editingSignalement.dateModification).toISOString()
+    };
+    
+    this.signalementService.updateSignalement(this.editingSignalement.id, updateData).subscribe({
       next: () => {
         this.isSaving = false;
         this.closeEditModal();
@@ -146,7 +155,9 @@ export class SignalementListComponent implements OnInit {
       description: signalement.description,
       budget: signalement.budget,
       surfaceM2: signalement.surfaceM2,
-      entrepriseConcerne: signalement.entrepriseConcerne
+      entrepriseConcerne: signalement.entrepriseConcerne,
+      // Par défaut, on prend "maintenant" pour le changement rapide
+      dateModification: new Date().toISOString()
     };
 
     this.signalementService.updateSignalement(id, updateData).subscribe({

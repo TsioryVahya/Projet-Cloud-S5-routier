@@ -21,6 +21,9 @@ public class SignalementDTO {
     @com.google.cloud.firestore.annotation.PropertyName("date_signalement")
     private Object dateSignalement;
 
+    @com.google.cloud.firestore.annotation.PropertyName("date_derniere_modification")
+    private Object dateDerniereModification;
+
     private String postgresId;
     private Double latitude;
     private Double longitude;
@@ -182,6 +185,16 @@ public class SignalementDTO {
     @com.google.cloud.firestore.annotation.PropertyName("date_signalement")
     public void setDateSignalement(Object dateSignalement) {
         this.dateSignalement = dateSignalement;
+    }
+
+    @com.google.cloud.firestore.annotation.PropertyName("date_derniere_modification")
+    public Object getDateDerniereModification() {
+        return dateDerniereModification;
+    }
+
+    @com.google.cloud.firestore.annotation.PropertyName("date_derniere_modification")
+    public void setDateDerniereModification(Object dateDerniereModification) {
+        this.dateDerniereModification = dateDerniereModification;
     }
 
     public String getStatut() {

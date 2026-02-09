@@ -367,14 +367,22 @@
             </div>
 
             <div>
-              <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Assigner une Entreprise</label>
-              <select 
-                [(ngModel)]="editingSignalement.entrepriseConcerne"
+              <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Date de Modification</label>
+              <input 
+                type="datetime-local"
+                [(ngModel)]="editingSignalement.dateModification"
                 class="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-slate-700 font-bold">
-                <option value="">-- Aucune entreprise --</option>
-                <option *ngFor="let ent of entreprises" [value]="ent.nom">{{ ent.nom }}</option>
-              </select>
             </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Assigner une Entreprise</label>
+            <select 
+              [(ngModel)]="editingSignalement.entrepriseConcerne"
+              class="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-slate-700 font-bold">
+              <option value="">-- Aucune entreprise --</option>
+              <option *ngFor="let ent of entreprises" [value]="ent.nom">{{ ent.nom }}</option>
+            </select>
           </div>
         </div>
         

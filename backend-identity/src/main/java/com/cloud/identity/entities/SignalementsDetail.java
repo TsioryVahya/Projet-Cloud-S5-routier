@@ -36,9 +36,6 @@ public class SignalementsDetail {
     @Column(name = "photo_url", length = Integer.MAX_VALUE)
     private String photoUrl;
 
-    @Column(name = "entreprise_concerne")
-    private String entrepriseConcerne;
-
     public UUID getId() {
         return id;
     }
@@ -94,13 +91,4 @@ public class SignalementsDetail {
     public void setPhotoUrl(String photoUrl) {
         this.photoUrl = photoUrl;
     }
-
-    public String getEntrepriseConcerne() {
-        return entrepriseConcerne;
-    }
-
-    public void setEntrepriseConcerne(String entrepriseConcerne) {
-        this.entrepriseConcerne = entrepriseConcerne;
-    }
-
 }

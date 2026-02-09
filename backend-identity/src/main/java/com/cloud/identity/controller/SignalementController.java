@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -103,7 +104,10 @@ public class SignalementController {
             Integer typeId = data.get("typeId") != null ? Integer.valueOf(data.get("typeId").toString()) : 
                              (data.get("type_id") != null ? Integer.valueOf(data.get("type_id").toString()) : null);
 
-            signalementService.modifierSignalement(id, latitude, longitude, statutId, description, surfaceM2, budget, entrepriseConcerne, photoUrl, typeId);
+            String dateStr = (String) data.get("dateModification");
+            Instant dateModification = (dateStr != null && !dateStr.isEmpty()) ? Instant.parse(dateStr) : Instant.now();
+
+            signalementService.modifierSignalement(id, latitude, longitude, statutId, description, surfaceM2, budget, entrepriseConcerne, photoUrl, typeId, dateModification);
             return ResponseEntity.ok("Signalement modifié avec succès");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

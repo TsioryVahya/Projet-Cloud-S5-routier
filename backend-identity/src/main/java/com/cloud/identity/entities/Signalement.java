@@ -44,6 +44,9 @@ public class Signalement {
     @Column(name = "firebase_uid_utilisateur")
     private String firebaseUidUtilisateur;
 
+    @Column(name = "date_derniere_modification")
+    private Instant dateDerniereModification;
+
     @OneToOne(mappedBy = "signalement", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private SignalementsDetail details;
 
@@ -125,6 +128,14 @@ public class Signalement {
 
     public void setFirebaseUidUtilisateur(String firebaseUidUtilisateur) {
         this.firebaseUidUtilisateur = firebaseUidUtilisateur;
+    }
+
+    public Instant getDateDerniereModification() {
+        return dateDerniereModification;
+    }
+
+    public void setDateDerniereModification(Instant dateDerniereModification) {
+        this.dateDerniereModification = dateDerniereModification;
     }
 
 }
