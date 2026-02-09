@@ -87,10 +87,11 @@ public class SignalementService {
     public List<SignalementDTO> getAllSignalements() {
         return signalementRepository.findAllWithDetails().stream().map(s -> {
             SignalementDTO dto = new SignalementDTO();
-            dto.setPostgresId(s.getId().toString());
+            dto.setId(s.getId().toString());
             dto.setLatitude(s.getLatitude());
             dto.setLongitude(s.getLongitude());
             dto.setIdFirebase(s.getIdFirebase());
+            dto.setFirebaseUidUtilisateur(s.getFirebaseUidUtilisateur());
             dto.setDateSignalement(s.getDateSignalement());
 
             // On renvoie le NOM du statut pour le dashboard web
@@ -167,6 +168,7 @@ public class SignalementService {
         s.setLongitude(longitude);
         s.setStatut(statut);
         s.setUtilisateur(utilisateur);
+        s.setFirebaseUidUtilisateur(utilisateur.getFirebaseUid());
         s.setType(type);
         s.setDateSignalement(Instant.now());
 
@@ -290,6 +292,7 @@ public class SignalementService {
         s.setLatitude(dto.getLatitude());
         s.setLongitude(dto.getLongitude());
         s.setIdFirebase(dto.getIdFirebase());
+        s.setFirebaseUidUtilisateur(dto.getFirebaseUidUtilisateur());
 
         if (dto.getDateSignalement() != null) {
             try {
@@ -324,49 +327,56 @@ public class SignalementService {
         }
 
         // Gérer l'utilisateur
-        String email = null;
-        UUID utilisateurId = null;
+        if (s.getUtilisateur() == null && s.getFirebaseUidUtilisateur() != null && !s.getFirebaseUidUtilisateur().isEmpty()) {
+            utilisateurRepository.findByFirebaseUid(s.getFirebaseUidUtilisateur()).ifPresent(s::setUtilisateur);
+        }
 
-        if (dto.getUtilisateurId() != null && !dto.getUtilisateurId().isEmpty()) {
-            try {
-                utilisateurId = UUID.fromString(dto.getUtilisateurId());
-            } catch (Exception e) {
-                System.err.println("Erreur conversion utilisateurId UUID : " + dto.getUtilisateurId());
+        // Si toujours pas trouvé, on regarde dans utilisateur_id (qui peut être le Firebase UID)
+        if (s.getUtilisateur() == null && dto.getUtilisateurId() != null && !dto.getUtilisateurId().isEmpty()) {
+            utilisateurRepository.findByFirebaseUid(dto.getUtilisateurId()).ifPresent(s::setUtilisateur);
+            
+            // Si pas trouvé par Firebase UID, on tente quand même par UUID au cas où
+            if (s.getUtilisateur() == null) {
+                try {
+                    UUID uuid = UUID.fromString(dto.getUtilisateurId());
+                    utilisateurRepository.findById(uuid).ifPresent(s::setUtilisateur);
+                } catch (Exception ignored) {}
             }
         }
 
+        String email = null;
         if (dto.getUtilisateur() != null && dto.getUtilisateur().getEmail() != null) {
             email = dto.getUtilisateur().getEmail();
         } else if (dto.getEmail() != null) {
             email = dto.getEmail();
         }
 
-        if (utilisateurId != null) {
-            Optional<Utilisateur> optUser = utilisateurRepository.findById(utilisateurId);
-            if (optUser.isPresent()) {
-                s.setUtilisateur(optUser.get());
-            } else if (email != null) {
-                // Fallback sur l'email si l'ID n'est pas trouvé
-                final String finalEmail = email;
-                Utilisateur utilisateur = utilisateurRepository.findByEmail(finalEmail)
-                        .orElseGet(() -> {
-                            Utilisateur newUser = new Utilisateur();
-                            newUser.setEmail(finalEmail);
-                            newUser.setMotDePasse("default_password");
-                            return utilisateurRepository.save(newUser);
-                        });
-                s.setUtilisateur(utilisateur);
-            }
-        } else if (email != null) {
+        // Si l'utilisateur n'est toujours pas lié, on le cherche par email
+        if (s.getUtilisateur() == null && email != null) {
             final String finalEmail = email;
-            Utilisateur utilisateur = utilisateurRepository.findByEmail(finalEmail)
-                    .orElseGet(() -> {
-                        Utilisateur newUser = new Utilisateur();
-                        newUser.setEmail(finalEmail);
-                        newUser.setMotDePasse("default_password");
-                        return utilisateurRepository.save(newUser);
-                    });
-            s.setUtilisateur(utilisateur);
+            Optional<Utilisateur> optUser = utilisateurRepository.findByEmail(finalEmail);
+            if (optUser.isPresent()) {
+                Utilisateur u = optUser.get();
+                // Mise à jour du Firebase UID si manquant ou différent de l'UUID
+                // L'utilisateur nous a montré que firebase_uid contient l'UUID pour certains cas
+                if (s.getFirebaseUidUtilisateur() != null && !s.getFirebaseUidUtilisateur().isEmpty()) {
+                    if (u.getFirebaseUid() == null || u.getFirebaseUid().isEmpty() || !u.getFirebaseUid().equals(s.getFirebaseUidUtilisateur())) {
+                        u.setFirebaseUid(s.getFirebaseUidUtilisateur());
+                        utilisateurRepository.save(u);
+                        System.out.println("✅ Mise à jour du Firebase UID pour l'utilisateur : " + finalEmail + " -> " + s.getFirebaseUidUtilisateur());
+                    }
+                }
+                s.setUtilisateur(u);
+            } else {
+                // Création d'un nouvel utilisateur si vraiment inexistant
+                Utilisateur newUser = new Utilisateur();
+                newUser.setEmail(finalEmail);
+                newUser.setMotDePasse("default_password");
+                if (s.getFirebaseUidUtilisateur() != null) {
+                    newUser.setFirebaseUid(s.getFirebaseUidUtilisateur());
+                }
+                s.setUtilisateur(utilisateurRepository.save(newUser));
+            }
         }
 
         s = signalementRepository.save(s);
@@ -449,23 +459,26 @@ public class SignalementService {
                     + (signalement.getUtilisateur() != null ? signalement.getUtilisateur().getEmail() : "NULL"));
             System.out.println("   - Changement: " + oldStatus + " -> " + newStatus);
 
-            if (signalement.getUtilisateur() == null) {
-                System.err.println("❌ Pas d'utilisateur associé au signalement");
-                return;
-            }
-
             if (signalement.getIdFirebase() == null || signalement.getIdFirebase().isEmpty()) {
                 System.err.println("❌ Pas d'ID Firebase pour le signalement");
                 return;
             }
 
-            // Utiliser l'ID Postgres de l'utilisateur comme UID Firebase
-            // car le document dans la collection "users" est nommé avec cet ID
-            String userId = signalement.getUtilisateur().getId().toString();
-            System.out.println("🆔 Firebase UID (Postgres ID): " + userId);
+            // Utiliser le firebase_uid_utilisateur du signalement
+            String userId = signalement.getFirebaseUidUtilisateur();
+            
+            // Si pas de firebase_uid_utilisateur, utiliser le firebase_uid de l'utilisateur lié
+            if (userId == null || userId.isEmpty()) {
+                if (signalement.getUtilisateur() != null) {
+                    userId = signalement.getUtilisateur().getFirebaseUid();
+                    System.out.println("🆔 Utilisation du Firebase UID de l'utilisateur: " + userId);
+                }
+            } else {
+                System.out.println("🆔 Firebase UID (depuis signalement): " + userId);
+            }
 
             if (userId == null || userId.isEmpty()) {
-                System.err.println("❌ Impossible de déterminer l'UID Firebase (ID Postgres manquant)");
+                System.err.println("❌ Impossible de déterminer l'UID Firebase");
                 return;
             }
 
@@ -481,37 +494,5 @@ public class SignalementService {
             System.err.println("⚠️ Erreur lors de l'envoi de la notification: " + e.getMessage());
             e.printStackTrace();
         }
-    }
-
-    /**
-     * Récupère l'ID Firebase d'un utilisateur à partir de son email
-     * 
-     * @deprecated Utiliser directement l'ID Postgres qui est l'ID du document dans
-     *             Firestore
-     */
-    @Deprecated
-    private String getUserFirebaseId(String email) {
-        try {
-            System.out.println("🔍 Recherche de l'UID Firebase pour l'email: " + email);
-
-            com.google.cloud.firestore.Firestore db = com.google.firebase.cloud.FirestoreClient.getFirestore();
-            com.google.cloud.firestore.QuerySnapshot querySnapshot = db.collection("users")
-                    .whereEqualTo("email", email)
-                    .limit(1)
-                    .get()
-                    .get();
-
-            if (!querySnapshot.isEmpty()) {
-                String uid = querySnapshot.getDocuments().get(0).getId();
-                System.out.println("✅ UID trouvé: " + uid);
-                return uid;
-            } else {
-                System.err.println("❌ Aucun utilisateur trouvé dans Firestore avec l'email: " + email);
-            }
-        } catch (Exception e) {
-            System.err.println("⚠️ Erreur lors de la récupération de l'ID Firebase: " + e.getMessage());
-            e.printStackTrace();
-        }
-        return null;
     }
 }

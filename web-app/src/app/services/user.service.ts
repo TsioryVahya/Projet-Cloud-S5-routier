@@ -34,8 +34,8 @@ export class UserService {
     return this.http.post<Utilisateur>(this.apiUrl, user);
   }
 
-  updateUser(id: string, user: any): Observable<Utilisateur> {
-    return this.http.put<Utilisateur>(`${this.apiUrl}/${id}`, user);
+  updateUser(firebaseUid: string, user: any): Observable<Utilisateur> {
+    return this.http.put<Utilisateur>(`${this.apiUrl}/${firebaseUid}`, user);
   }
 
   syncUsers(): Observable<any> {
@@ -50,7 +50,7 @@ export class UserService {
     return this.http.post(`${this.authUrl}/unblock`, { email });
   }
 
-  deleteUser(id: string): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/${id}`);
+  deleteUser(firebaseUid: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/${firebaseUid}`);
   }
 }

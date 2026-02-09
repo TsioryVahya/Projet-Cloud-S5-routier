@@ -179,7 +179,6 @@ public class FirestoreSyncService {
         try {
             CollectionReference usersCol = firestore.collection("utilisateurs");
             Map<String, Object> data = new HashMap<>();
-            data.put("postgresId", user.getId().toString());
             data.put("firebaseUid", user.getFirebaseUid());
             data.put("email", user.getEmail());
             data.put("motDePasse", user.getMotDePasse());
@@ -206,8 +205,12 @@ public class FirestoreSyncService {
             // LOG POUR DEBUG : On affiche ce qu'on envoie
             System.out.println("📤 Sync vers Firestore [" + user.getEmail() + "] - FirebaseUID: " + user.getFirebaseUid());
 
-            // Utiliser le Firebase UID comme ID de document si disponible, sinon l'ID Postgres
-            String documentId = user.getFirebaseUid() != null ? user.getFirebaseUid() : user.getId().toString();
+            // Utiliser le Firebase UID comme ID de document
+            String documentId = user.getFirebaseUid();
+            if (documentId == null || documentId.isEmpty()) {
+                System.err.println("⚠️ Impossible de synchroniser l'utilisateur " + user.getEmail() + " car il n'a pas de Firebase UID");
+                return;
+            }
             usersCol.document(documentId).set(data).get();
         } catch (Exception e) {
             System.err.println("Erreur lors de la synchronisation de l'utilisateur " + user.getEmail()
@@ -331,19 +334,6 @@ public class FirestoreSyncService {
                     }
                 }
 
-                // Fallback sur l'ancien champ utilisateur_id si l'email n'est pas présent
-                if (s.getUtilisateur() == null) {
-                    String utilisateurIdStr = document.getString("utilisateur_id");
-                    if (utilisateurIdStr != null && !utilisateurIdStr.isEmpty()) {
-                        try {
-                            java.util.UUID utilisateurId = java.util.UUID.fromString(utilisateurIdStr);
-                            utilisateurRepository.findById(utilisateurId).ifPresent(s::setUtilisateur);
-                        } catch (Exception e) {
-                            System.err.println("ID utilisateur invalide dans Firestore: " + utilisateurIdStr);
-                        }
-                    }
-                }
-
                 // Fallback sur l'objet utilisateur imbriqué (si présent)
                 if (s.getUtilisateur() == null) {
                     Map<String, Object> userMap = (Map<String, Object>) document.get("utilisateur");
@@ -414,7 +404,6 @@ public class FirestoreSyncService {
     public String createSignalementInFirestore(Signalement signalement, SignalementsDetail details) {
         try {
             Map<String, Object> data = new HashMap<>();
-            data.put("postgresId", signalement.getId().toString());
             data.put("latitude", signalement.getLatitude());
             data.put("longitude", signalement.getLongitude());
             data.put("dateSignalement",
@@ -422,6 +411,10 @@ public class FirestoreSyncService {
 
             if (signalement.getStatut() != null) {
                 data.put("statut", signalement.getStatut().getNom());
+            }
+
+            if (signalement.getFirebaseUidUtilisateur() != null) {
+                data.put("firebase_uid_utilisateur", signalement.getFirebaseUidUtilisateur());
             }
 
             if (signalement.getType() != null) {
@@ -476,7 +469,9 @@ public class FirestoreSyncService {
             if (signalement.getStatut() != null) {
                 updates.put("statut", signalement.getStatut().getNom());
             }
-            updates.put("postgresId", signalement.getId().toString());
+            if (signalement.getFirebaseUidUtilisateur() != null) {
+                updates.put("firebase_uid_utilisateur", signalement.getFirebaseUidUtilisateur());
+            }
             updates.put("latitude", signalement.getLatitude());
             updates.put("longitude", signalement.getLongitude());
 

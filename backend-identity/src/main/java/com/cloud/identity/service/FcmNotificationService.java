@@ -77,12 +77,23 @@ public class FcmNotificationService {
                     userId, signalementId, oldStatus, newStatus);
 
             // Récupérer le FCM token de l'utilisateur depuis Firestore
+            // On essaie d'abord la collection "users" (mobile) puis "utilisateurs" (web/sync)
             Firestore db = FirestoreClient.getFirestore();
-            DocumentReference userDoc = db.collection("users").document(userId);
-
+            
             String fcmToken = null;
+            
+            // 1. Tenter dans la collection "users" avec le userId fourni (qui peut être l'UUID ou l'UID Firebase)
+            DocumentReference userDoc = db.collection("users").document(userId);
             try {
                 Map<String, Object> userData = userDoc.get().get().getData();
+                
+                // 2. Si non trouvé dans "users", on essaie "utilisateurs"
+                if (userData == null) {
+                    logger.info("ℹ️ Utilisateur non trouvé dans 'users', tentative dans 'utilisateurs' pour userId={}", userId);
+                    userDoc = db.collection("utilisateurs").document(userId);
+                    userData = userDoc.get().get().getData();
+                }
+
                 if (userData != null && userData.containsKey("fcmToken")) {
                     fcmToken = (String) userData.get("fcmToken");
                 }
@@ -90,6 +101,9 @@ public class FcmNotificationService {
                 logger.error("❌ Erreur lors de la récupération du FCM token", e);
                 return;
             }
+
+            // 3. Si toujours pas de token, et que l'ID ressemble à un UUID, on peut tenter une recherche par email
+            // ou par d'autres identifiants si nécessaire. Mais ici le userId est censé être l'ID du document.
 
             // 1. Toujours créer l'enregistrement dans la collection notifications Firestore
             // Cela permet à l'utilisateur de voir la notification dans l'app mobile même si
@@ -99,7 +113,8 @@ public class FcmNotificationService {
             // 2. Tenter d'envoyer la notification push FCM
             if (fcmToken == null || fcmToken.isEmpty()) {
                 logger.warn(
-                        "⚠️ Aucun FCM token trouvé pour l'utilisateur {}. La notification push ne sera pas envoyée, mais elle est enregistrée dans l'historique Firestore.",
+                        "⚠️ Aucun FCM token trouvé pour l'utilisateur {} (cherché dans 'users' et 'utilisateurs'). " +
+                        "La notification push ne sera pas envoyée, mais elle est enregistrée dans l'historique Firestore.",
                         userId);
                 return;
             }

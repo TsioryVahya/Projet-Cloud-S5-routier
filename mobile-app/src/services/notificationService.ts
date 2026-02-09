@@ -49,9 +49,9 @@ class NotificationService {
         return;
       }
 
-      // Utiliser soit Firebase Auth, soit le store custom
-      const userEmail = auth.currentUser?.email || store.user?.email;
-      const userId = auth.currentUser?.uid || store.user?.postgresId;
+    // Utiliser systématiquement le firebaseUid (qui est l'identifiant unique du projet)
+    const userId = store.user?.firebaseUid || auth.currentUser?.uid;
+    const userEmail = store.user?.email || auth.currentUser?.email;
 
       if (!userEmail || !userId) {
         console.warn('⚠️ Utilisateur non identifié, impossible de sauvegarder le token');
@@ -130,7 +130,7 @@ class NotificationService {
 
   async loadNotifications() {
     try {
-      const userId = auth.currentUser?.uid || store.user?.postgresId;
+      const userId = store.user?.firebaseUid || auth.currentUser?.uid;
 
       if (!userId) {
         console.warn('⚠️ Utilisateur non identifié, impossible de charger les notifications');

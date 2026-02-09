@@ -49,9 +49,9 @@ public class UtilisateurController {
         return repository.findByStatutActuelNom("BLOQUE");
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Utilisateur> getById(@PathVariable UUID id) {
-        return repository.findById(id)
+    @GetMapping("/{firebaseUid}")
+    public ResponseEntity<Utilisateur> getByFirebaseUid(@PathVariable String firebaseUid) {
+        return repository.findByFirebaseUid(firebaseUid)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -64,9 +64,9 @@ public class UtilisateurController {
         return repository.save(entity);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Utilisateur> update(@PathVariable UUID id, @RequestBody Utilisateur entity) {
-        Utilisateur existingUser = repository.findById(id).orElse(null);
+    @PutMapping("/{firebaseUid}")
+    public ResponseEntity<Utilisateur> update(@PathVariable String firebaseUid, @RequestBody Utilisateur entity) {
+        Utilisateur existingUser = repository.findByFirebaseUid(firebaseUid).orElse(null);
         if (existingUser == null) return ResponseEntity.notFound().build();
         
         // Mettre à jour les champs de l'objet existant au lieu de sauvegarder l'objet reçu
@@ -81,11 +81,13 @@ public class UtilisateurController {
         return ResponseEntity.ok(repository.save(existingUser));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
-        return repository.findById(id).map(user -> {
+    @DeleteMapping("/{firebaseUid}")
+    public ResponseEntity<Void> delete(@PathVariable String firebaseUid) {
+        return repository.findByFirebaseUid(firebaseUid).map(user -> {
             // Supprimer de Firestore d'abord (en utilisant l'ID et l'email pour être sûr)
-            syncService.deleteUserInFirestore(user.getId().toString());
+            if (user.getFirebaseUid() != null) {
+                syncService.deleteUserInFirestore(user.getFirebaseUid());
+            }
             syncService.deleteUserInFirestore(user.getEmail());
 
             // Supprimer de Postgres

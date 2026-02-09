@@ -9,7 +9,7 @@ export interface StatutUtilisateur {
 }
 
 export interface Utilisateur {
-  id: string;
+  firebaseUid: string; // Utiliser le Firebase UID comme identifiant principal
   email: string;
   role: Role;
   statutActuel: StatutUtilisateur;

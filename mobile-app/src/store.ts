@@ -23,8 +23,7 @@ export interface AppUser {
   email: string;
   role?: string;
   statut?: string;
-  postgresId?: string;
-  firebaseUid?: string;
+  firebaseUid: string; // L'identifiant unique Firebase (qui peut être un UUID dans votre cas)
   expiresAt?: string;
 }
 

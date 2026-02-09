@@ -326,7 +326,6 @@ const handleLogin = async () => {
     const userData = userDoc.data();
 
     console.log("Utilisateur trouvé dans Firestore:", userData.email);
-    console.log("MDP Firestore:", userData.motDePasse, "| MDP saisi:", password);
 
     // 2.5 Récupérer la durée de session (duree_session_heures)
     const sessionConfigDoc = await getDoc(doc(db, 'configurations', 'duree_session_heures'));
@@ -338,12 +337,6 @@ const handleLogin = async () => {
       return;
     }
 
-    const appUser = {
-      email: userData.email,
-      role: userData.role,
-      statut: userData.statut,
-      postgresId: userData.id // On utilise le champ 'id' de Firestore qui contient le UUID
-    };
     // 4. Vérifier le mot de passe
     if (userData.motDePasse === password) {
       // Succès : réinitialiser les tentatives
@@ -354,39 +347,36 @@ const handleLogin = async () => {
 
       const expiresAt = new Date(Date.now() + dureeHeures * 3600 * 1000).toISOString();
 
-      const appUser = {
+      // L'ID du document est l'UUID Postgres (identifiant stable pour tout le projet)
+      const finalFirebaseUid = userDoc.id;
+      
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        console.log('✅ Firebase Auth réussie, UID (auth):', userCredential.user.uid);
+        // On garde finalFirebaseUid = userDoc.id pour la cohérence avec le backend
+      } catch (authError: any) {
+        console.warn('⚠️ Erreur Firebase Auth (normal si le compte n\'existe pas dans Firebase Auth):', authError.message);
+      }
+
+      const appUser: AppUser = {
         email: userData.email,
         role: userData.role,
         statut: userData.statut,
-        postgresId: userData.postgresId,
-        firebaseUid: userDoc.id, // L'ID du document est le Firebase UID
+        firebaseUid: finalFirebaseUid, // Toujours utiliser l'UUID Postgres comme identifiant unique
         expiresAt: expiresAt
       };
 
       setUser(appUser);
       localStorage.setItem('app_user', JSON.stringify(appUser));
       
-      console.log('✅ Connexion réussie, authentification Firebase Auth...');
+      console.log('✅ Connexion réussie, UID utilisé:', appUser.firebaseUid);
       
-      // Authentifier avec Firebase Auth pour permettre aux notifications de fonctionner
       try {
-        await signInWithEmailAndPassword(auth, email, password);
-        console.log('✅ Firebase Auth réussie');
-        
-        // Les notifications s'initialiseront automatiquement via onAuthStateChanged dans main.ts
-        console.log('✅ Les notifications vont s\'initialiser automatiquement...');
-      } catch (authError: any) {
-        console.warn('⚠️ Erreur Firebase Auth (normal si le compte n\'existe pas dans Firebase Auth):', authError.message);
-        console.log('💡 Tentative d\'initialisation manuelle des notifications...');
-        
-        // Fallback : initialiser manuellement si Firebase Auth échoue
-        try {
-          await notificationService.initialize();
-          await notificationService.loadNotifications();
-          console.log('✅ Service de notifications initialisé manuellement');
-        } catch (error) {
-          console.error('❌ Erreur lors de l\'initialisation manuelle des notifications:', error);
-        }
+        await notificationService.initialize();
+        await notificationService.loadNotifications();
+        console.log('✅ Service de notifications initialisé');
+      } catch (error) {
+        console.error('❌ Erreur lors de l\'initialisation des notifications:', error);
       }
       
       showLoginModal.value = false;

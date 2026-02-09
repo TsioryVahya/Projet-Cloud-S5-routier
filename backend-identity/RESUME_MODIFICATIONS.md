@@ -87,7 +87,7 @@ try {
 2. Sélectionnez votre projet `synchronisation-ab2ec`
 3. Allez dans Firestore Database
 4. Vérifiez la collection `signalements`
-5. Vous devriez voir les documents avec `postgresId`
+5. Vous devriez voir les documents avec `idFirebase` et `firebase_uid_utilisateur`
 
 ## 🐛 Si le problème persiste
 

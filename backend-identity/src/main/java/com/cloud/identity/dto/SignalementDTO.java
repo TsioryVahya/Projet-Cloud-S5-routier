@@ -3,6 +3,8 @@ package com.cloud.identity.dto;
 import java.math.BigDecimal;
 
 public class SignalementDTO {
+    private String id;
+    
     @com.google.cloud.firestore.annotation.PropertyName("photo_url")
     private String photoUrl;
     
@@ -21,7 +23,6 @@ public class SignalementDTO {
     @com.google.cloud.firestore.annotation.PropertyName("date_signalement")
     private Object dateSignalement;
 
-    private String postgresId;
     private Double latitude;
     private Double longitude;
     private String description;
@@ -34,6 +35,9 @@ public class SignalementDTO {
     
     @com.google.cloud.firestore.annotation.PropertyName("utilisateur_id")
     private String utilisateurId;
+
+    @com.google.cloud.firestore.annotation.PropertyName("firebase_uid_utilisateur")
+    private String firebaseUidUtilisateur;
 
     @com.google.cloud.firestore.annotation.PropertyName("id_type_signalement")
     private Integer idTypeSignalement;
@@ -82,14 +86,6 @@ public class SignalementDTO {
 
     public void setTypeCouleur(String typeCouleur) {
         this.typeCouleur = typeCouleur;
-    }
-
-    public String getPostgresId() {
-        return postgresId;
-    }
-
-    public void setPostgresId(String postgresId) {
-        this.postgresId = postgresId;
     }
 
     public Double getLatitude() {
@@ -210,6 +206,16 @@ public class SignalementDTO {
         this.utilisateurId = utilisateurId;
     }
 
+    @com.google.cloud.firestore.annotation.PropertyName("firebase_uid_utilisateur")
+    public String getFirebaseUidUtilisateur() {
+        return firebaseUidUtilisateur;
+    }
+
+    @com.google.cloud.firestore.annotation.PropertyName("firebase_uid_utilisateur")
+    public void setFirebaseUidUtilisateur(String firebaseUidUtilisateur) {
+        this.firebaseUidUtilisateur = firebaseUidUtilisateur;
+    }
+
     @com.google.cloud.firestore.annotation.PropertyName("id_type_signalement")
     public Integer getIdTypeSignalement() {
         return idTypeSignalement;
@@ -218,5 +224,13 @@ public class SignalementDTO {
     @com.google.cloud.firestore.annotation.PropertyName("id_type_signalement")
     public void setIdTypeSignalement(Integer idTypeSignalement) {
         this.idTypeSignalement = idTypeSignalement;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 }

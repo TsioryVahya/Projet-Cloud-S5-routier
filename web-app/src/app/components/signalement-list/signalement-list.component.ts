@@ -101,7 +101,7 @@ export class SignalementListComponent implements OnInit {
     const currentStatus = this.statuses.find(st => String(st.nom || '').toLowerCase() === signalementStatut);
     
     this.editingSignalement = {
-      id: signalement.postgresId || signalement.id,
+      id: signalement.id,
       latitude: signalement.latitude,
       longitude: signalement.longitude,
       statutId: currentStatus ? currentStatus.id : 1, // Fallback au premier statut si non trouvé
@@ -136,7 +136,7 @@ export class SignalementListComponent implements OnInit {
   }
 
   onStatusChange(signalement: Signalement, newStatusId: string): void {
-    const id = signalement.postgresId || signalement.id;
+    const id = signalement.id;
     if (!id) return;
 
     const updateData = {
@@ -195,9 +195,10 @@ export class SignalementListComponent implements OnInit {
     return 'bg-green-50 text-green-600 border-green-100 focus:ring-green-500';
   }
 
-  deleteSignalement(id: string | undefined): void {
-    if (!id) return;
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce signalement ?')) {
+  deleteSignalement(signalement: Signalement): void {
+    if (!signalement.id) return;
+    const id = signalement.id;
+    if (confirm('Voulez-vous vraiment supprimer ce signalement ?')) {
       this.signalementService.deleteSignalement(id).subscribe({
         next: () => this.loadSignalements(),
         error: (err) => console.error(err)
@@ -213,7 +214,7 @@ export class SignalementListComponent implements OnInit {
 
     const term = this.searchTerm.toLowerCase().trim();
     this.filteredSignalements = this.signalements.filter(s => {
-      const idStr = (s.postgresId || s.id || '').toString().toLowerCase();
+      const idStr = (s.id || '').toString().toLowerCase();
       const typeStr = (s.typeNom || '').toLowerCase();
       const descStr = (s.description || '').toLowerCase();
       const emailStr = (s.utilisateur?.email || '').toLowerCase();
