@@ -193,7 +193,7 @@ export class MapComponent implements OnInit, AfterViewInit {
 
   private createCustomIcon(s: Signalement, isSelected: boolean = false): L.DivIcon {
     const status = String(s.statut || 'Nouveau').toLowerCase();
-    const color = this.getStatusColor(status);
+    const typeColor = s.typeCouleur || this.getStatusColor(status);
     let innerIcon = '';
 
     // Utiliser l'icône du type si elle existe, sinon icône par défaut selon le statut
@@ -228,33 +228,55 @@ export class MapComponent implements OnInit, AfterViewInit {
       }
     }
 
-    // Badge "nike" (checkmark) pour le statut terminé
-    const showCheckmark = status.includes('termin');
-    const badgeHtml = showCheckmark ? `
-      <div class="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center shadow-lg z-10">
-        <svg class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7" />
-        </svg>
-      </div>
-    ` : '';
+    // Badge de statut (en haut à droite)
+    let badgeHtml = '';
+    let strokeColor = 'white';
+    let strokeWidth = '1.5';
+
+    if (status.includes('termin')) {
+      strokeColor = '#10b981'; // Vert pour terminé
+      strokeWidth = '2.5';
+      badgeHtml = `
+        <div class="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center shadow-lg z-20">
+          <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+      `;
+    } else if (status.includes('cours')) {
+      strokeColor = '#f59e0b'; // Or/Gold pour en cours
+      strokeWidth = '2.5';
+      badgeHtml = `
+        <div class="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 rounded-full border-2 border-white flex items-center justify-center shadow-lg z-20">
+          <svg class="w-3.5 h-3.5 text-white animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          </svg>
+        </div>
+      `;
+    }
 
     return L.divIcon({
       className: `custom-div-icon ${isSelected ? 'marker-selected' : ''}`,
       html: `
-        <div class="marker-container relative flex items-center justify-center">
-          ${isSelected ? `<div class="ping-animation absolute w-10 h-10 rounded-full opacity-20 animate-ping" style="background-color: ${color}"></div>` : ''}
+        <div class="marker-container relative w-8 h-8 flex items-center justify-center">
+          ${isSelected ? `
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none" style="transform: translateY(16px);">
+              <div class="ping-animation w-12 h-12 rounded-full opacity-40 animate-ping" style="background-color: ${typeColor}"></div>
+              <div class="absolute w-4 h-4 rounded-full opacity-60" style="background-color: ${typeColor}; filter: blur(4px);"></div>
+            </div>
+          ` : ''}
           ${badgeHtml}
           <svg class="pin-svg relative w-8 h-8 drop-shadow-2xl transition-all duration-300" viewBox="0 0 24 24" fill="none">
             <defs>
-              <linearGradient id="grad-${color.replace('#','')}" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
-                <stop offset="100%" style="stop-color:${this.darkenColor(color)};stop-opacity:1" />
+              <linearGradient id="grad-${typeColor.replace('#','')}" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:${typeColor};stop-opacity:1" />
+                <stop offset="100%" style="stop-color:${this.darkenColor(typeColor)};stop-opacity:1" />
               </linearGradient>
             </defs>
-            <path d="M12 21C15.5 17.4 19 14.1764 19 10.2C19 6.22355 15.866 3 12 3C8.13401 3 5 6.22355 5 10.2C5 14.1764 8.5 17.4 12 21Z" 
-                  fill="url(#grad-${color.replace('#','')})" 
-                  stroke="${showCheckmark ? '#10b981' : 'white'}" 
-                  stroke-width="${showCheckmark ? '2.5' : '1.5'}"/>
+            <path d="M12 22.5C12 22.5 20 15.5 20 10C20 5.58172 16.4183 2 12 2C7.58172 2 4 5.58172 4 10C4 15.5 12 22.5 12 22.5Z" 
+                  fill="url(#grad-${typeColor.replace('#','')})" 
+                  stroke="${strokeColor}" 
+                  stroke-width="${strokeWidth}"/>
             ${innerIcon}
           </svg>
         </div>
@@ -296,9 +318,10 @@ export class MapComponent implements OnInit, AfterViewInit {
 
     this.signalements.forEach(s => {
       const statusName = String(s.statut || 'Nouveau');
+      const isSelected = this.selectedSignalement?.id === s.id;
       
       const marker = L.marker([s.latitude, s.longitude], {
-        icon: this.createCustomIcon(s)
+        icon: this.createCustomIcon(s, isSelected)
       })
       .on('click', () => this.selectSignalement(s))
       .addTo(this.map)
@@ -308,6 +331,10 @@ export class MapComponent implements OnInit, AfterViewInit {
           <p class="text-[10px] text-slate-500">${new Date(s.dateSignalement).toLocaleDateString()}</p>
         </div>
       `, { className: 'minimal-popup' });
+
+      if (isSelected) {
+        marker.openPopup();
+      }
 
       this.markersMap.set(s.id!, marker);
     });

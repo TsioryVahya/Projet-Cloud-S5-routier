@@ -147,6 +147,13 @@
                   [style.border-color]="getStatusColor(selectedSignalement?.statut!) + '40'">
               {{ selectedSignalement?.statut }}
             </span>
+            <span *ngIf="selectedSignalement?.typeNom" 
+                  class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border"
+                  [style.background-color]="(selectedSignalement?.typeCouleur || '#64748b') + '15'"
+                  [style.color]="selectedSignalement?.typeCouleur || '#64748b'"
+                  [style.border-color]="(selectedSignalement?.typeCouleur || '#64748b') + '40'">
+              {{ selectedSignalement?.typeNom }}
+            </span>
             <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">ID: #{{ selectedSignalement?.id }}</span>
           </div>
           <h2 class="text-2xl font-black text-slate-900 leading-tight">Détails de l'Incident</h2>
@@ -201,13 +208,37 @@
             <p class="text-sm font-bold text-slate-800">{{ selectedSignalement?.dateSignalement | date:'dd MMM yyyy' }}</p>
           </div>
           <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-            <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">Sévérité Estimée</p>
+            <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">Type de Signalement</p>
             <div class="flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-              <p class="text-sm font-bold text-slate-800">Intermédiaire</p>
+              <span class="w-2 h-2 rounded-full" [style.background-color]="selectedSignalement?.typeCouleur || '#64748b'"></span>
+              <p class="text-sm font-bold text-slate-800">{{ selectedSignalement?.typeNom || 'Non spécifié' }}</p>
             </div>
           </div>
         </div>
+
+        <div class="grid grid-cols-2 gap-4 mt-4">
+          <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+            <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">Surface Impactée</p>
+            <p class="text-sm font-bold text-slate-800">{{ selectedSignalement?.surfaceM2 ? selectedSignalement?.surfaceM2 + ' m²' : 'N/A' }}</p>
+          </div>
+          <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+            <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">Budget Estimé</p>
+            <p class="text-sm font-bold text-emerald-600">{{ selectedSignalement?.budget ? (selectedSignalement?.budget | number:'1.0-2') + ' Ar' : 'N/A' }}</p>
+          </div>
+        </div>
+
+        <div class="mt-4 bg-slate-50 p-5 rounded-2xl border border-slate-100">
+          <p class="text-[10px] text-slate-400 font-bold uppercase mb-2">Entreprise en Charge</p>
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-blue-600 shadow-sm">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+            </div>
+            <p class="text-sm font-bold text-slate-800">{{ selectedSignalement?.entrepriseNom || selectedSignalement?.entrepriseConcerne || 'Aucune entreprise assignée' }}</p>
+          </div>
+        </div>
+
         <div class="mt-4 bg-slate-50 p-5 rounded-2xl border border-slate-100">
           <p class="text-[10px] text-slate-400 font-bold uppercase mb-2">Description</p>
           <p class="text-sm text-slate-600 leading-relaxed font-medium">
