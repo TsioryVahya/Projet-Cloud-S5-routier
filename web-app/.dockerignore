@@ -1,7 +1,0 @@
-node_modules
-dist
-.angular
-.vscode
-.git
-Dockerfile
-docker-compose.yml
