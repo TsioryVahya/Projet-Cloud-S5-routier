@@ -1,0 +1,91 @@
+/* Particules et Data Lines */
+.particle {
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+  opacity: 0.6;
+  filter: blur(1px);
+}
+
+.p1 { width: 4px; height: 4px; top: 20%; left: 10%; animation: float 15s infinite; }
+.p2 { width: 6px; height: 6px; top: 60%; left: 30%; animation: float 20s infinite reverse; }
+.p3 { width: 3px; height: 3px; top: 80%; left: 15%; animation: float 18s infinite; }
+.p4 { width: 5px; height: 5px; top: 40%; left: 80%; animation: float 25s infinite; }
+.p5 { width: 4px; height: 4px; top: 10%; left: 60%; animation: float 22s infinite reverse; }
+.p6 { width: 7px; height: 7px; top: 75%; left: 70%; animation: float 30s infinite; }
+
+.data-line {
+  position: absolute;
+  background: linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.4), transparent);
+  height: 1px;
+  width: 100%;
+}
+
+.l1 { top: 30%; animation: dataMove 10s infinite linear; }
+.l2 { top: 70%; animation: dataMove 15s infinite linear reverse; }
+
+@keyframes float {
+  0%, 100% { transform: translate(0, 0); }
+  33% { transform: translate(30px, -50px); }
+  66% { transform: translate(-20px, 40px); }
+}
+
+@keyframes dataMove {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 1s ease-out forwards;
+}
+
+.animate-fade-in-down {
+  animation: fadeInDown 0.8s ease-out forwards;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s ease-out forwards;
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animate-shake {
+  animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes blob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+/* Glassmorphism utility if needed */
+.backdrop-blur-md {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
