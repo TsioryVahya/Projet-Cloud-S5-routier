@@ -61,11 +61,7 @@ public class UtilisateurController {
         if (entity.getDateDerniereModification() == null) {
             entity.setDateDerniereModification(java.time.Instant.now());
         }
-        Utilisateur saved = repository.save(entity);
-        try {
-            syncService.syncUserToFirestore(saved);
-        } catch (Exception e) {}
-        return saved;
+        return repository.save(entity);
     }
 
     @PutMapping("/{id}")
@@ -82,11 +78,7 @@ public class UtilisateurController {
         existingUser.setStatutActuel(entity.getStatutActuel());
         existingUser.setDateDerniereModification(java.time.Instant.now());
         
-        Utilisateur saved = repository.save(existingUser);
-        try {
-            syncService.syncUserToFirestore(saved);
-        } catch (Exception e) {}
-        return ResponseEntity.ok(saved);
+        return ResponseEntity.ok(repository.save(existingUser));
     }
 
     @DeleteMapping("/{id}")
