@@ -10,7 +10,7 @@ import java.util.UUID;
 @Table(name = "utilisateurs")
 public class Utilisateur {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @ColumnDefault("uuid_generate_v4()")
     @Column(name = "id", nullable = false)
     private UUID id;
 
@@ -44,12 +44,12 @@ public class Utilisateur {
     @Column(name = "date_derniere_modification")
     private Instant dateDerniereModification;
 
+    @Column(name = "firebase_uid", unique = true)
+    private String firebaseUid;
+
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "date_creation")
     private Instant dateCreation;
-
-    @Column(name = "firebase_uid")
-    private String firebaseUid;
 
     public UUID getId() {
         return id;
@@ -131,6 +131,14 @@ public class Utilisateur {
         this.dateDerniereModification = dateDerniereModification;
     }
 
+    public String getFirebaseUid() {
+        return firebaseUid;
+    }
+
+    public void setFirebaseUid(String firebaseUid) {
+        this.firebaseUid = firebaseUid;
+    }
+
     public Instant getDateCreation() {
         return dateCreation;
     }
@@ -139,11 +147,4 @@ public class Utilisateur {
         this.dateCreation = dateCreation;
     }
 
-    public String getFirebaseUid() {
-        return firebaseUid;
-    }
-
-    public void setFirebaseUid(String firebaseUid) {
-        this.firebaseUid = firebaseUid;
-    }
 }

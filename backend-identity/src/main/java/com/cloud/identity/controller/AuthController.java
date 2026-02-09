@@ -26,10 +26,10 @@ public class AuthController {
             if (result.isPresent()) {
                 return ResponseEntity.ok(result.get());
             } else {
-                return ResponseEntity.status(401).body(Map.of("error", "Identifiants incorrects"));
+                return ResponseEntity.status(401).body("Identifiants incorrects");
             }
         } catch (Exception e) {
-            return ResponseEntity.status(403).body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Forbidden"));
+            return ResponseEntity.status(403).body(e.getMessage());
         }
     }
 
@@ -38,7 +38,7 @@ public class AuthController {
         try {
             return ResponseEntity.ok(authService.register(user));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Bad request"));
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
@@ -46,9 +46,9 @@ public class AuthController {
     public ResponseEntity<?> unblock(@RequestBody Map<String, String> data) {
         try {
             authService.unblockUser(data.get("email"));
-            return ResponseEntity.ok(Map.of("message", "Utilisateur débloqué"));
+            return ResponseEntity.ok("Utilisateur débloqué");
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 }
