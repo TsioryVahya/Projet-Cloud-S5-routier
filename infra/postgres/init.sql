@@ -191,20 +191,6 @@ INSERT INTO types_signalement (nom, description, icone_path, couleur) VALUES
     '#0288D1'
 );
 
--- Insertion de l'utilisateur Tsiory (Donnée d'initialisation)
-INSERT INTO utilisateurs (id, email, mot_de_passe, role_id, statut_actuel_id, date_derniere_modification, firebase_uid) 
-VALUES (
-    '6df75176-449f-4aae-b8d1-dfbcc8feecfe', 
-    'tsiory@gmail.com', 
-    'tsiory123', 
-    (SELECT id FROM roles WHERE nom = 'UTILISATEUR'),
-    (SELECT id FROM statuts_utilisateur WHERE nom = 'ACTIF'),
-    '2026-02-09 16:29:46',
-    'tsiory-firebase-uid-6df75176' -- UID Firebase généré pour l'initialisation
-)
-ON CONFLICT (email) DO UPDATE SET 
-    id = EXCLUDED.id,
-    firebase_uid = EXCLUDED.firebase_uid;
 
 -- Ajout à l'historique pour Tsiory
 INSERT INTO historique_utilisateur (utilisateur_id, statut_id)
