@@ -4,6 +4,9 @@ import { IonicVue } from '@ionic/vue';
 import router from './router';
 import './tailwind.css';
 import { defineCustomElements } from '@ionic/pwa-elements/loader';
+import { notificationService } from './services/notificationService';
+import { auth } from './firebase/config';
+import { onAuthStateChanged } from 'firebase/auth';
 
 // Call the element loader before the render call
 defineCustomElements(window);
@@ -27,6 +30,26 @@ import '@ionic/vue/css/display.css';
 const app = createApp(App)
   .use(IonicVue)
   .use(router);
+
+// Initialiser les notifications quand l'utilisateur est connecté
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    console.log('👤 Utilisateur connecté:', user.email);
+    console.log('🔔 Initialisation des notifications...');
+    
+    // Initialiser FCM
+    await notificationService.initialize();
+    
+    // Réessayer de sauvegarder le token si nécessaire
+    await notificationService.retryTokenSave();
+    
+    // Charger les notifications
+    await notificationService.loadNotifications();
+  } else {
+    console.log('👤 Utilisateur déconnecté, nettoyage des notifications...');
+    notificationService.cleanup();
+  }
+});
 
 router.isReady().then(() => {
   app.mount('#app');

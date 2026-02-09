@@ -64,13 +64,14 @@ public class FirestoreSyncService {
             for (QueryDocumentSnapshot document : documents) {
                 String email = document.getString("email");
                 String idStr = document.getString("id");
-                if (idStr == null) idStr = document.getId(); // Fallback sur l'ID du document
-                
+                if (idStr == null)
+                    idStr = document.getId(); // Fallback sur l'ID du document
+
                 if (email == null || email.isEmpty())
                     continue;
 
                 Utilisateur user = null;
-                
+
                 // 1. Chercher par ID d'abord (si présent)
                 if (idStr != null && !idStr.isEmpty()) {
                     try {
@@ -84,7 +85,7 @@ public class FirestoreSyncService {
                         System.err.println("⚠️ ID utilisateur Firestore invalide : " + idStr);
                     }
                 }
-                
+
                 // 2. Chercher par email si non trouvé par ID
                 if (user == null) {
                     Optional<Utilisateur> existingUserByEmail = utilisateurRepository.findByEmail(email);
@@ -97,7 +98,7 @@ public class FirestoreSyncService {
                 if (user == null) {
                     user = new Utilisateur();
                     user.setEmail(email);
-                    
+
                     // Si on a un ID dans Firestore, on essaie de le préserver
                     if (idStr != null && !idStr.isEmpty()) {
                         try {
@@ -106,7 +107,7 @@ public class FirestoreSyncService {
                             // Ignorer si ID invalide
                         }
                     }
-                    
+
                     user.setDateCreation(java.time.Instant.now());
                     System.out.println("➕ Création nouvel utilisateur : " + email);
                     createdUsers++;
@@ -136,11 +137,12 @@ public class FirestoreSyncService {
 
                 utilisateurRepository.save(user);
                 String postgresIdStr = document.getString("postgresId");
-                
-                if (email == null || email.isEmpty()) continue;
+
+                if (email == null || email.isEmpty())
+                    continue;
 
                 Optional<Utilisateur> userOpt = Optional.empty();
-                
+
                 // Priorité à l'ID Postgres pour éviter les doublons si l'email a changé
                 if (postgresIdStr != null && !postgresIdStr.isEmpty()) {
                     try {
@@ -149,80 +151,85 @@ public class FirestoreSyncService {
                         System.err.println("ID Postgres invalide dans Firestore: " + postgresIdStr);
                     }
                 }
-                
+
                 // Si non trouvé par ID, on cherche par email
                 if (userOpt.isEmpty()) {
                     userOpt = utilisateurRepository.findByEmail(email);
                 }
 
-                Utilisateur user;
+                Utilisateur userToSync;
                 boolean isNew = false;
 
                 if (userOpt.isPresent()) {
-                    user = userOpt.get();
-                    
+                    userToSync = userOpt.get();
+
                     // --- LOGIQUE DE COMPARAISON DES DATES (Solution 2) ---
-                    com.google.cloud.Timestamp firestoreTime = document.getTimestamp("date_derniere_modification");
-                    if (firestoreTime != null && user.getDateDerniereModification() != null) {
-                        java.time.Instant firestoreInstant = firestoreTime.toSqlTimestamp().toInstant();
-                        java.time.Instant postgresInstant = user.getDateDerniereModification();
-                        
+                    com.google.cloud.Timestamp firestoreTimeMod = document.getTimestamp("date_derniere_modification");
+                    if (firestoreTimeMod != null && userToSync.getDateDerniereModification() != null) {
+                        java.time.Instant firestoreInstant = firestoreTimeMod.toSqlTimestamp().toInstant();
+                        java.time.Instant postgresInstant = userToSync.getDateDerniereModification();
+
                         // Si Postgres est plus récent, on ignore l'import pour cet utilisateur
                         if (postgresInstant.isAfter(firestoreInstant)) {
-                            System.out.println("⏳ Sync ignorée pour " + email + " (Postgres est plus récent : " + postgresInstant + " > " + firestoreInstant + ")");
-                            continue; 
+                            System.out.println("⏳ Sync ignorée pour " + email + " (Postgres est plus récent : "
+                                    + postgresInstant + " > " + firestoreInstant + ")");
+                            continue;
                         }
                     }
                 } else {
-                    user = new Utilisateur();
-                    // Si on a un postgresIdStr mais qu'il n'existe pas en base, on peut soit l'ignorer, 
+                    userToSync = new Utilisateur();
+                    // Si on a un postgresIdStr mais qu'il n'existe pas en base, on peut soit
+                    // l'ignorer,
                     // soit le créer avec cet ID. Ici on le crée avec cet ID si possible.
                     if (postgresIdStr != null && !postgresIdStr.isEmpty()) {
                         try {
-                            user.setId(java.util.UUID.fromString(postgresIdStr));
-                        } catch (Exception e) {}
+                            userToSync.setId(java.util.UUID.fromString(postgresIdStr));
+                        } catch (Exception e) {
+                        }
                     }
-                    user.setEmail(email);
-                    user.setDateCreation(java.time.Instant.now());
-                    user.setRole(roleRepository.findByNom("UTILISATEUR").orElse(null));
+                    userToSync.setEmail(email);
+                    userToSync.setDateCreation(java.time.Instant.now());
+                    userToSync.setRole(roleRepository.findByNom("UTILISATEUR").orElse(null));
                     isNew = true;
                 }
 
                 // Mettre à jour l'email au cas où il aurait changé
-                user.setEmail(email);
+                userToSync.setEmail(email);
 
                 // Synchroniser le mot de passe si présent
                 if (document.getString("motDePasse") != null) {
-                    user.setMotDePasse(document.getString("motDePasse"));
+                    userToSync.setMotDePasse(document.getString("motDePasse"));
                 } else if (isNew) {
-                    user.setMotDePasse("default_password");
+                    userToSync.setMotDePasse("default_password");
                 }
 
                 // Synchroniser le statut depuis Firestore
                 String firestoreStatut = document.getString("statut");
                 if (firestoreStatut != null) {
                     final String statusToSearch = firestoreStatut;
-                    user.setStatutActuel(statutUtilisateurRepository.findByNom(statusToSearch)
+                    userToSync.setStatutActuel(statutUtilisateurRepository.findByNom(statusToSearch)
                             .orElseGet(() -> statutUtilisateurRepository.findByNom("ACTIF").orElse(null)));
                 } else if (isNew) {
-                    user.setStatutActuel(statutUtilisateurRepository.findByNom("ACTIF").orElse(null));
+                    userToSync.setStatutActuel(statutUtilisateurRepository.findByNom("ACTIF").orElse(null));
                 }
 
                 // Synchroniser les tentatives de connexion
                 Long tentatives = document.getLong("tentatives_connexion");
                 if (tentatives != null) {
-                    user.setTentativesConnexion(tentatives.intValue());
+                    userToSync.setTentativesConnexion(tentatives.intValue());
                 }
 
                 // Mettre à jour la date de modification locale avec celle de Firestore
-                com.google.cloud.Timestamp firestoreTime = document.getTimestamp("date_derniere_modification");
-                if (firestoreTime != null) {
-                    user.setDateDerniereModification(firestoreTime.toSqlTimestamp().toInstant());
+                com.google.cloud.Timestamp firestoreTimeFinal = document.getTimestamp("date_derniere_modification");
+                if (firestoreTimeFinal != null) {
+                    userToSync.setDateDerniereModification(firestoreTimeFinal.toSqlTimestamp().toInstant());
                 }
 
-                utilisateurRepository.save(user);
-                if (isNew) createdUsers++;
-                else updatedUsers++;
+                utilisateurRepository.save(userToSync);
+                if (isNew)
+                    createdUsers++;
+                else
+                    updatedUsers++;
             }
         } catch (Exception e) {
             System.err.println(
@@ -282,7 +289,6 @@ public class FirestoreSyncService {
         try {
             List<Utilisateur> users = utilisateurRepository.findAll();
             for (Utilisateur user : users) {
-                syncSingleUserToFirestore(user);
                 syncUserToFirestore(user);
                 syncedUsers++;
             }
@@ -335,6 +341,19 @@ public class FirestoreSyncService {
             } else {
                 System.out.println("ℹ️ Aucun signalement trouvé dans Firestore avec l'email : " + oldEmail);
             }
+
+            // 3. Mettre à jour l'email dans la collection 'users' (utilisée par le mobile
+            // pour FCM)
+            ApiFuture<QuerySnapshot> futureUsers = firestore.collection("users")
+                    .whereEqualTo("email", oldEmail)
+                    .get();
+
+            List<QueryDocumentSnapshot> userDocs = futureUsers.get().getDocuments();
+            for (QueryDocumentSnapshot document : userDocs) {
+                document.getReference().update("email", newEmail).get();
+                System.out.println(
+                        "✅ Utilisateur (notifications) " + document.getId() + " mis à jour avec le nouvel email");
+            }
         } catch (Exception e) {
             System.err.println("❌ Erreur lors de la mise à jour en cascade des emails Firestore : " + e.getMessage());
             e.printStackTrace();
@@ -350,21 +369,22 @@ public class FirestoreSyncService {
             return;
         }
         try {
-            // On essaie de supprimer par ID d'abord (recommandé car plus stable)
+            // Tentative de suppression par ID document (ID Postgres)
             firestore.collection("utilisateurs").document(userIdOrEmail).delete().get();
-            System.out.println(
-                    "🗑️ Tentative de suppression de l'utilisateur dans Firestore (ID/Email) : " + userIdOrEmail);
+            System.out.println("🗑️ Suppression Firestore par ID réussie : " + userIdOrEmail);
 
-            // Si c'était un email et qu'on utilise maintenant des IDs, on peut aussi
-            // chercher le document par le champ email
-            ApiFuture<QuerySnapshot> future = firestore.collection("utilisateurs").whereEqualTo("email", userIdOrEmail)
-                    .get();
-            for (DocumentSnapshot doc : future.get().getDocuments()) {
-                doc.getReference().delete().get();
-                System.out.println("🗑️ Utilisateur supprimé de Firestore via son champ email : " + userIdOrEmail);
+            // Suppression par email si nécessaire (cas anciens documents)
+            if (userIdOrEmail.contains("@")) {
+                ApiFuture<QuerySnapshot> future = firestore.collection("utilisateurs")
+                        .whereEqualTo("email", userIdOrEmail)
+                        .get();
+                for (DocumentSnapshot doc : future.get().getDocuments()) {
+                    doc.getReference().delete().get();
+                    System.out.println("🗑️ Suppression Firestore par email réussie : " + userIdOrEmail);
+                }
             }
         } catch (Exception e) {
-            System.err.println("Erreur lors de la suppression de l'utilisateur dans Firestore : " + e.getMessage());
+            System.err.println("Erreur lors de la suppression Firestore : " + e.getMessage());
         }
     }
 
@@ -372,7 +392,8 @@ public class FirestoreSyncService {
      * Synchronise un seul type de signalement vers Firestore.
      */
     public void syncSingleTypeSignalementToFirestore(com.cloud.identity.entities.TypeSignalement type) {
-        if (firestore == null) return;
+        if (firestore == null)
+            return;
         try {
             Map<String, Object> data = new HashMap<>();
             data.put("id", type.getId());
@@ -384,7 +405,8 @@ public class FirestoreSyncService {
             firestore.collection("types_signalement").document(String.valueOf(type.getId())).set(data).get();
             System.out.println("🚀 Synchronisation immédiate du type vers Firestore réussie : " + type.getNom());
         } catch (Exception e) {
-            System.err.println("Erreur lors de la synchronisation immédiate du type vers Firestore : " + e.getMessage());
+            System.err
+                    .println("Erreur lors de la synchronisation immédiate du type vers Firestore : " + e.getMessage());
         }
     }
 
@@ -392,7 +414,8 @@ public class FirestoreSyncService {
      * Supprime un type de signalement dans Firestore.
      */
     public void deleteTypeSignalementInFirestore(Integer typeId) {
-        if (firestore == null) return;
+        if (firestore == null)
+            return;
         try {
             firestore.collection("types_signalement").document(String.valueOf(typeId)).delete().get();
             System.out.println("🗑️ Suppression du type dans Firestore réussie : " + typeId);
@@ -430,12 +453,19 @@ public class FirestoreSyncService {
         }
         return Map.of("syncedTypes", syncedTypes);
     }
-     /* Synchronise un utilisateur spécifique vers Firestore.
+
+    /*
+     * Synchronise un utilisateur spécifique vers Firestore.
      */
     public void syncUserToFirestore(Utilisateur user) {
+        if (firestore == null) {
+            System.err.println("⚠️ Impossible de synchroniser l'utilisateur : Firestore n'est pas initialisé.");
+            return;
+        }
         try {
             CollectionReference usersCol = firestore.collection("utilisateurs");
             Map<String, Object> data = new HashMap<>();
+            data.put("id", user.getId().toString()); // Assurer la compatibilité avec l'ID mobile
             data.put("postgresId", user.getId().toString());
             data.put("email", user.getEmail());
             data.put("motDePasse", user.getMotDePasse());
@@ -450,16 +480,23 @@ public class FirestoreSyncService {
             }
 
             data.put("dateCreation", user.getDateCreation() != null ? user.getDateCreation().toString() : null);
-            data.put("derniereConnexion", user.getDerniereConnexion() != null ? user.getDerniereConnexion().toString() : null);
-            data.put("date_derniere_modification", user.getDateDerniereModification() != null ? com.google.cloud.Timestamp.of(java.sql.Timestamp.from(user.getDateDerniereModification())) : null);
+            data.put("derniereConnexion",
+                    user.getDerniereConnexion() != null ? user.getDerniereConnexion().toString() : null);
+            data.put("date_derniere_modification",
+                    user.getDateDerniereModification() != null
+                            ? com.google.cloud.Timestamp.of(java.sql.Timestamp.from(user.getDateDerniereModification()))
+                            : null);
 
             // LOG POUR DEBUG : On affiche ce qu'on envoie
             System.out.println("📤 Sync vers Firestore [" + user.getEmail() + "] - MDP: " + user.getMotDePasse());
 
-            // Utiliser l'ID Postgres comme ID de document dans Firestore pour éviter les doublons si l'email change
+            // Utiliser l'ID Postgres comme ID de document dans Firestore pour éviter les
+            // doublons
             usersCol.document(user.getId().toString()).set(data).get();
+            System.out.println("🚀 Synchronisation réussie pour l'utilisateur : " + user.getEmail());
         } catch (Exception e) {
-            System.err.println("Erreur lors de la synchronisation de l'utilisateur " + user.getEmail() + " vers Firestore : " + e.getMessage());
+            System.err.println("Erreur lors de la synchronisation de l'utilisateur " + user.getEmail()
+                    + " vers Firestore : " + e.getMessage());
         }
     }
 
@@ -479,7 +516,8 @@ public class FirestoreSyncService {
             }
             System.out.println("✅ Configurations synchronisées vers Firestore.");
         } catch (Exception e) {
-            System.err.println("Erreur lors de la synchronisation des configurations vers Firestore : " + e.getMessage());
+            System.err
+                    .println("Erreur lors de la synchronisation des configurations vers Firestore : " + e.getMessage());
         }
     }
 
@@ -503,7 +541,7 @@ public class FirestoreSyncService {
 
                 // Vérifier si le signalement existe déjà dans Postgres
                 Optional<Signalement> existingSignalement = signalementRepository.findByIdFirebase(idFirebase);
-                
+
                 // Extraire l'ID utilisateur Firestore
                 String utilisateurIdStr = document.getString("utilisateur_id");
                 if (utilisateurIdStr == null) {
@@ -514,7 +552,8 @@ public class FirestoreSyncService {
                     Signalement s = existingSignalement.get();
                     // Si le signalement existe déjà, on vérifie si l'utilisateur est anonyme
                     // Si oui, on essaie de le lier au bon utilisateur maintenant
-                    if (s.getUtilisateur() != null && "anonyme@routier.mg".equals(s.getUtilisateur().getEmail()) && utilisateurIdStr != null) {
+                    if (s.getUtilisateur() != null && "anonyme@routier.mg".equals(s.getUtilisateur().getEmail())
+                            && utilisateurIdStr != null) {
                         System.out.println("🔄 Mise à jour de l'auteur pour le signalement existant : " + idFirebase);
                         // On continue le traitement pour mettre à jour l'utilisateur
                     } else {
@@ -527,11 +566,12 @@ public class FirestoreSyncService {
                 Double longitude = document.getDouble("longitude");
                 String description = document.getString("description");
                 String statutNom = document.getString("statut");
-                
+
                 // Gérer le type (ID numérique ou Nom)
                 Long typeIdLong = document.getLong("id_type_signalement");
                 String typeNom = document.getString("type");
-                if (typeNom == null) typeNom = document.getString("type_nom");
+                if (typeNom == null)
+                    typeNom = document.getString("type_nom");
 
                 // Gérer la date
                 java.time.Instant dateSignalement = java.time.Instant.now();
@@ -588,7 +628,7 @@ public class FirestoreSyncService {
                     s = new Signalement();
                     s.setIdFirebase(idFirebase);
                 }
-                
+
                 s.setLatitude(latitude != null ? latitude : 0.0);
                 s.setLongitude(longitude != null ? longitude : 0.0);
                 s.setDateSignalement(dateSignalement);
@@ -654,7 +694,8 @@ public class FirestoreSyncService {
                         try {
                             newUser.setId(UUID.fromString(finalUserId));
                         } catch (Exception e) {
-                            System.err.println("⚠️ Impossible d'utiliser l'ID Firestore pour le nouvel utilisateur: " + finalUserId);
+                            System.err.println("⚠️ Impossible d'utiliser l'ID Firestore pour le nouvel utilisateur: "
+                                    + finalUserId);
                         }
                     }
 
@@ -677,7 +718,7 @@ public class FirestoreSyncService {
                     details = new SignalementsDetail();
                     details.setSignalement(s);
                 }
-                
+
                 details.setDescription(description);
                 details.setSurfaceM2(surfaceM2);
                 details.setBudget(budget);
@@ -752,6 +793,7 @@ public class FirestoreSyncService {
 
             if (signalement.getType() != null) {
                 data.put("type", signalement.getType().getNom());
+                data.put("id_type_signalement", signalement.getType().getId());
             }
 
             if (signalement.getUtilisateur() != null) {
@@ -801,6 +843,7 @@ public class FirestoreSyncService {
 
             if (signalement.getType() != null) {
                 updates.put("type", signalement.getType().getNom());
+                updates.put("id_type_signalement", signalement.getType().getId());
             }
 
             updates.put("postgresId", signalement.getId().toString());

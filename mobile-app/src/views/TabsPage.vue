@@ -15,15 +15,33 @@
           </ion-badge>
           <ion-label class="hidden-label">Liste</ion-label>
         </ion-tab-button>
+
+        <ion-tab-button tab="notifications" href="/tabs/notifications">
+          <ion-icon :icon="notificationsOutline" />
+          <ion-badge v-if="unreadCount > 0" color="danger" class="custom-badge">
+            {{ unreadCount }}
+          </ion-badge>
+          <ion-label class="hidden-label">Notifications</ion-label>
+        </ion-tab-button>
+
+        <ion-tab-button tab="my-reports" href="/tabs/my-reports">
+          <ion-icon :icon="personOutline" />
+          <ion-label class="hidden-label">Moi</ion-label>
+        </ion-tab-button>
       </ion-tab-bar>
     </ion-tabs>
   </ion-page>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { IonPage, IonTabs, IonRouterOutlet, IonTabBar, IonTabButton, IonIcon, IonLabel, IonBadge } from '@ionic/vue';
-import { mapOutline, listOutline } from 'ionicons/icons';
+import { mapOutline, listOutline, personOutline, notificationsOutline } from 'ionicons/icons';
 import { store } from '../store';
+import { notificationService } from '../services/notificationService';
+
+// Utiliser computed pour éviter les erreurs de réactivité
+const unreadCount = computed(() => notificationService.unreadCount.value);
 </script>
 
 

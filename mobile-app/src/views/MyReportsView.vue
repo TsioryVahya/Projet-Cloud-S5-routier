@@ -11,52 +11,41 @@
     <ion-content :fullscreen="true" class="bg-slate-50">
       <div class="p-6 pb-32">
         <!-- En-tête -->
-        <div class="flex items-center justify-between mb-6 pt-4">
-          <div>
-            <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Travaux</h1>
-            <p class="text-slate-500 text-sm mt-1 font-medium">
-              {{ filteredSignalements.length }} signalement{{ filteredSignalements.length > 1 ? 's' : '' }}
-            </p>
-          </div>
-          
-          <button 
-            v-if="store.user"
-            @click="toggleFilter"
-            class="p-3 rounded-2xl transition-all border shadow-sm flex items-center justify-center"
-            :class="filterMine ? 'bg-blue-600 text-white border-blue-500 shadow-blue-500/30' : 'bg-white text-slate-400 border-slate-100'"
-          >
-            <ion-icon :icon="personOutline" class="text-xl" />
-          </button>
+        <div class="mb-6 pt-4">
+          <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Mes Signalements</h1>
+          <p class="text-slate-500 text-sm mt-1 font-medium" v-if="store.user">
+            {{ mySignalements.length }} signalement{{ mySignalements.length > 1 ? 's' : '' }} envoyé{{ mySignalements.length > 1 ? 's' : '' }}
+          </p>
         </div>
 
-        <!-- Filtres par statut -->
-        <div class="flex gap-2 overflow-x-auto no-scrollbar mb-8 pb-1">
+        <!-- État non connecté -->
+        <div v-if="!store.user" class="flex flex-col items-center justify-center py-20 text-center">
+          <div class="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mb-6">
+            <ion-icon :icon="personOutline" class="text-4xl text-blue-500" />
+          </div>
+          <h3 class="text-lg font-bold text-slate-700">Non connecté</h3>
+          <p class="text-slate-400 text-sm mt-2 max-w-[240px] mb-6">Connectez-vous pour voir et gérer vos propres signalements.</p>
           <button 
-            v-for="f in filterOptions" 
-            :key="f.id"
-            @click="activeStatusFilter = f.id"
-            class="px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all border"
-            :class="activeStatusFilter === f.id 
-              ? 'bg-slate-800 text-white border-slate-800 shadow-lg shadow-slate-200' 
-              : 'bg-white text-slate-500 border-slate-100'"
+            @click="router.push('/tabs/map')"
+            class="bg-blue-600 text-white px-8 py-3 rounded-2xl font-bold shadow-lg shadow-blue-500/30 active:scale-95 transition-all"
           >
-            {{ f.label }}
+            Aller à la carte
           </button>
         </div>
 
         <!-- Liste vide -->
-        <div v-if="filteredSignalements.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
+        <div v-else-if="mySignalements.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
           <div class="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-4 grayscale opacity-50">
             <ion-icon :icon="constructOutline" class="text-4xl text-slate-400" />
           </div>
-          <h3 class="text-lg font-bold text-slate-700">Aucun travaux</h3>
-          <p class="text-slate-400 text-sm mt-2 max-w-[200px]">Il n'y a aucun signalement correspondant à vos critères.</p>
+          <h3 class="text-lg font-bold text-slate-700">Aucun signalement</h3>
+          <p class="text-slate-400 text-sm mt-2 max-w-[200px]">Vous n'avez pas encore envoyé de signalement.</p>
         </div>
 
         <!-- Liste des cartes -->
         <div v-else class="space-y-4">
           <div 
-            v-for="s in filteredSignalements" 
+            v-for="s in mySignalements" 
             :key="s.id"
             class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 active:scale-[0.99] transition-transform"
           >
@@ -74,8 +63,8 @@
               {{ s.description || 'Signalement sans description' }}
             </h3>
 
-            <!-- Nouveaux détails (Sync Postgres) -->
-            <div v-if="s.entreprise || s.budget || s.surface_m2" class="grid grid-cols-2 gap-2 mb-3">
+            <!-- Détails (Sync Postgres) -->
+            <div v-if="s.entreprise || s.surface_m2" class="grid grid-cols-2 gap-2 mb-3">
               <div v-if="s.entreprise" class="bg-slate-50 p-2 rounded-lg border border-slate-100">
                 <p class="text-[8px] font-bold text-slate-400 uppercase">Entreprise</p>
                 <p class="text-[10px] font-medium text-slate-600 truncate">{{ s.entreprise }}</p>
@@ -88,12 +77,10 @@
 
             <div class="flex items-center justify-between pt-3 border-t border-slate-50">
               <div class="flex items-center gap-2">
-                <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center">
-                  <ion-icon :icon="store.user && (s.email === store.user.email || s.utilisateur_id === store.user.postgresId) ? personOutline : eyeOutline" class="text-[10px]" />
+                <div class="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center">
+                  <ion-icon :icon="personOutline" class="text-[10px] text-blue-500" />
                 </div>
-                <span class="text-xs font-medium text-slate-500 truncate max-w-[120px]">
-                  {{ store.user && (s.email === store.user.email || s.utilisateur_id === store.user.postgresId) ? 'Moi' : (s.email || 'Utilisateur anonyme') }}
-                </span>
+                <span class="text-xs font-bold text-blue-600">Moi</span>
               </div>
               
               <div class="flex gap-2">
@@ -127,7 +114,6 @@ import {
   personOutline, 
   constructOutline, 
   locationOutline, 
-  eyeOutline, 
   cameraOutline,
   closeOutline 
 } from 'ionicons/icons';
@@ -136,50 +122,15 @@ import { useRouter } from 'vue-router';
 import { store } from '../store';
 
 const router = useRouter();
-const filterMine = ref(false);
-const activeStatusFilter = ref('all');
 const selectedImageUrl = ref<string | null>(null);
 
-const filterOptions = [
-  { id: 'all', label: 'Tous' },
-  { id: 'nouveau', label: 'Nouveaux' },
-  { id: 'en cours', label: 'En cours' },
-  { id: 'termine', label: 'Terminés' },
-];
-
-const filteredSignalements = computed(() => {
-  let list = store.signalements;
-  
-  // Filtre par utilisateur
-  const user = store.user;
-  if (filterMine.value && user) {
-    list = list.filter(s => 
-      s.email === user.email || 
-      s.utilisateur_id === user.postgresId
-    );
-  }
-  
-  // Filtre par statut
-  if (activeStatusFilter.value !== 'all') {
-    list = list.filter(s => {
-      const sStatut = s.statut?.toLowerCase() || 'nouveau';
-      if (activeStatusFilter.value === 'termine') {
-        return sStatut.includes('fini') || sStatut.includes('termine');
-      }
-      return sStatut.includes(activeStatusFilter.value);
-    });
-  }
-  
-  return list;
+const mySignalements = computed(() => {
+  if (!store.user) return [];
+  return store.signalements.filter(s => s.email === store.user?.email);
 });
-
-const toggleFilter = () => {
-  filterMine.value = !filterMine.value;
-};
 
 const goToMap = (s: any) => {
   router.push('/tabs/map');
-  // On pourrait ajouter une logique pour centrer la carte sur ce point ici via le store
 };
 
 // Utilitaires

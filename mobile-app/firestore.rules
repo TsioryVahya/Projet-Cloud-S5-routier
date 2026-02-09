@@ -1,0 +1,49 @@
+// Règles de sécurité Firestore pour la collection notifications
+// À ajouter dans la console Firebase > Firestore Database > Règles
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Règles pour la collection notifications
+    match /notifications/{notificationId} {
+      // Lecture: Un utilisateur peut lire ses propres notifications
+      allow read: if request.auth != null && 
+                     request.auth.uid == resource.data.userId;
+      
+      // Écriture: Seul le backend peut créer des notifications
+      // (via Firebase Admin SDK qui bypass ces règles)
+      allow create: if false;
+      
+      // Mise à jour: Un utilisateur peut marquer ses notifications comme lues
+      allow update: if request.auth != null && 
+                       request.auth.uid == resource.data.userId &&
+                       request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['lu']);
+      
+      // Suppression: Les utilisateurs ne peuvent pas supprimer les notifications
+      allow delete: if false;
+    }
+    
+    // Règles pour la collection users (mise à jour pour FCM token)
+    match /users/{userId} {
+      // Lecture: Un utilisateur peut lire son propre document
+      allow read: if request.auth != null && request.auth.uid == userId;
+      
+      // Écriture: Un utilisateur peut créer/mettre à jour son propre document
+      allow create, update: if request.auth != null && request.auth.uid == userId;
+      
+      // Suppression
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Règles existantes pour signalements
+    match /signalements/{signalementId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && 
+                               (resource.data.email == request.auth.token.email ||
+                                request.auth.token.role == 'admin');
+    }
+  }
+}

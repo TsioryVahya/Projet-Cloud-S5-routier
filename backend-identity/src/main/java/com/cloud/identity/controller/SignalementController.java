@@ -48,7 +48,7 @@ public class SignalementController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping
+    @PostMapping(produces = "application/json")
     public ResponseEntity<?> create(@RequestBody Map<String, Object> data) {
         try {
             Double latitude = data.get("latitude") != null ? Double.valueOf(data.get("latitude").toString()) : null;
@@ -64,15 +64,18 @@ public class SignalementController {
             String entrepriseConcerne = data.get("entrepriseConcerne") != null ? (String) data.get("entrepriseConcerne") : (String) data.get("entreprise_concerne");
             
             String photoUrl = data.get("photoUrl") != null ? (String) data.get("photoUrl") : (String) data.get("photo_url");
+            
+            Integer typeId = data.get("typeId") != null ? Integer.valueOf(data.get("typeId").toString()) : 
+                             (data.get("id_type_signalement") != null ? Integer.valueOf(data.get("id_type_signalement").toString()) : null);
 
-            signalementService.creerSignalement(latitude, longitude, description, email, surfaceM2, budget, entrepriseConcerne, photoUrl);
-            return ResponseEntity.ok("Signalement créé avec succès");
+            signalementService.creerSignalement(latitude, longitude, description, email, surfaceM2, budget, entrepriseConcerne, photoUrl, typeId);
+            return ResponseEntity.ok(Map.of("message", "Signalement créé avec succès"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}", produces = "application/json")
     public ResponseEntity<?> update(@PathVariable UUID id, @RequestBody Map<String, Object> data) {
         try {
             Double latitude = data.get("latitude") != null ? Double.valueOf(data.get("latitude").toString()) : null;
@@ -90,21 +93,24 @@ public class SignalementController {
             String entrepriseConcerne = data.get("entrepriseConcerne") != null ? (String) data.get("entrepriseConcerne") : (String) data.get("entreprise_concerne");
             
             String photoUrl = data.get("photoUrl") != null ? (String) data.get("photoUrl") : (String) data.get("photo_url");
+            
+            Integer typeId = data.get("typeId") != null ? Integer.valueOf(data.get("typeId").toString()) : 
+                             (data.get("id_type_signalement") != null ? Integer.valueOf(data.get("id_type_signalement").toString()) : null);
 
-            signalementService.modifierSignalement(id, latitude, longitude, statutId, description, surfaceM2, budget, entrepriseConcerne, photoUrl);
-            return ResponseEntity.ok("Signalement modifié avec succès");
+            signalementService.modifierSignalement(id, latitude, longitude, statutId, description, surfaceM2, budget, entrepriseConcerne, photoUrl, typeId);
+            return ResponseEntity.ok(Map.of("message", "Signalement modifié avec succès"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping(value = "/{id}", produces = "application/json")
     public ResponseEntity<?> delete(@PathVariable UUID id) {
         try {
             signalementService.supprimerSignalement(id);
-            return ResponseEntity.ok("Signalement supprimé avec succès");
+            return ResponseEntity.ok(Map.of("message", "Signalement supprimé avec succès"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 }

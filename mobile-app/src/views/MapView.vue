@@ -234,6 +234,9 @@ import {
   updateDoc
 } from 'firebase/firestore';
 import { store, setUser } from '../store';
+import { notificationService } from '../services/notificationService';
+import { auth } from '../firebase/config';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 // UI State
 const showLoginModal = ref(false);
@@ -260,7 +263,10 @@ let userLocationMarker: L.LayerGroup | null = null;
 
 const filteredSignalements = computed(() => {
   if (filterMine.value && store.user) {
-    return store.signalements.filter(s => s.email === store.user?.email);
+    return store.signalements.filter(s => 
+      s.email === store.user?.email || 
+      s.utilisateur_id === store.user?.postgresId
+    );
   }
   return store.signalements;
 });
@@ -332,12 +338,6 @@ const handleLogin = async () => {
       return;
     }
 
-    const appUser = {
-      email: userData.email,
-      role: userData.role,
-      statut: userData.statut,
-      postgresId: userData.id // On utilise le champ 'id' de Firestore qui contient le UUID
-    };
     // 4. Vérifier le mot de passe
     if (userData.motDePasse === password) {
       // Succès : réinitialiser les tentatives
@@ -352,12 +352,35 @@ const handleLogin = async () => {
         email: userData.email,
         role: userData.role,
         statut: userData.statut,
-        postgresId: userData.postgresId,
+        postgresId: userData.postgresId || userDoc.id, // Priorité au champ postgresId, sinon l'ID du document
         expiresAt: expiresAt
       };
 
       setUser(appUser);
       localStorage.setItem('app_user', JSON.stringify(appUser));
+      
+      console.log('✅ Connexion réussie, authentification Firebase Auth...');
+      
+      // Authentifier avec Firebase Auth pour permettre aux notifications de fonctionner
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        console.log('✅ Firebase Auth réussie');
+        
+        // Les notifications s'initialiseront automatiquement via onAuthStateChanged dans main.ts
+        console.log('✅ Les notifications vont s\'initialiser automatiquement...');
+      } catch (authError: any) {
+        console.warn('⚠️ Erreur Firebase Auth (normal si le compte n\'existe pas dans Firebase Auth):', authError.message);
+        console.log('💡 Tentative d\'initialisation manuelle des notifications...');
+        
+        // Fallback : initialiser manuellement si Firebase Auth échoue
+        try {
+          await notificationService.initialize();
+          await notificationService.loadNotifications();
+          console.log('✅ Service de notifications initialisé manuellement');
+        } catch (error) {
+          console.error('❌ Erreur lors de l\'initialisation manuelle des notifications:', error);
+        }
+      }
       
       showLoginModal.value = false;
       loginEmail.value = '';
@@ -387,10 +410,20 @@ const handleLogin = async () => {
   }
 };
 
-const handleLogout = () => {
+const handleLogout = async () => {
   setUser(null);
   localStorage.removeItem('app_user');
   filterMine.value = false;
+  
+  // Nettoyer les notifications
+  notificationService.cleanup();
+  
+  // Se déconnecter de Firebase Auth si nécessaire
+  try {
+    await auth.signOut();
+  } catch (error) {
+    console.warn('⚠️ Erreur lors de la déconnexion Firebase Auth:', error);
+  }
 };
 
 // Map & Signalement Methods
@@ -441,6 +474,7 @@ const submitReport = async () => {
       description: reportDescription.value,
       photo_url: reportPhotoUrl.value,
       utilisateur_id: store.user.postgresId,
+      email: store.user.email, // Ajout de l'email pour le filtrage
       id_type_signalement: selectedTypeId.value,
       statut: 'nouveau',
       entreprise: null,

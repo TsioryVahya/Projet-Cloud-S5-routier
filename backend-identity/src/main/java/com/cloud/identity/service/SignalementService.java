@@ -11,7 +11,10 @@ import com.cloud.identity.repository.EntrepriseRepository;
 import com.cloud.identity.repository.SignalementRepository;
 import com.cloud.identity.repository.SignalementsDetailRepository;
 import com.cloud.identity.repository.StatutsSignalementRepository;
+import com.cloud.identity.repository.TypeSignalementRepository;
 import com.cloud.identity.repository.UtilisateurRepository;
+import com.cloud.identity.events.SignalementSavedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +29,9 @@ import java.util.stream.Collectors;
 
 @Service
 public class SignalementService {
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     @Autowired
     private SignalementRepository signalementRepository;
@@ -43,7 +49,13 @@ public class SignalementService {
     private UtilisateurRepository utilisateurRepository;
 
     @Autowired
+    private TypeSignalementRepository typeRepository;
+
+    @Autowired
     private FirestoreSyncService firestoreSyncService;
+
+    @Autowired
+    private FcmNotificationService fcmNotificationService;
 
     @Transactional
     public Map<String, Integer> synchroniserDonnees() {
@@ -136,7 +148,7 @@ public class SignalementService {
 
     @Transactional
     public void creerSignalement(Double latitude, Double longitude, String description, String email,
-                                 Double surfaceM2, BigDecimal budget, String entrepriseNom, String photoUrl) throws Exception {
+                                 Double surfaceM2, BigDecimal budget, String entrepriseNom, String photoUrl, Integer typeId) throws Exception {
         Utilisateur utilisateur = utilisateurRepository.findByEmail(email)
                 .orElseThrow(() -> new Exception("Utilisateur non trouvé"));
 
@@ -149,6 +161,10 @@ public class SignalementService {
         s.setStatut(statut);
         s.setUtilisateur(utilisateur);
         s.setDateSignalement(Instant.now());
+
+        if (typeId != null) {
+            typeRepository.findById(typeId).ifPresent(s::setType);
+        }
 
         signalementRepository.save(s);
 
@@ -170,8 +186,8 @@ public class SignalementService {
         
         details.setPhotoUrl(photoUrl);
         
-        detailsRepository.save(details);
         s.setDetails(details);
+        detailsRepository.save(details);
 
         // Synchronisation Firebase
         String idFirebase = firestoreSyncService.createSignalementInFirestore(s, details);
@@ -184,9 +200,12 @@ public class SignalementService {
     @Transactional
     public void modifierSignalement(UUID id, Double latitude, Double longitude, Integer statutId,
                                     String description, Double surfaceM2, BigDecimal budget,
-                                    String entrepriseNom, String photoUrl) throws Exception {
+                                    String entrepriseNom, String photoUrl, Integer typeId) throws Exception {
         Signalement s = signalementRepository.findById(id)
                 .orElseThrow(() -> new Exception("Signalement non trouvé"));
+        
+        // Récupérer l'ancien statut pour la notification
+        String oldStatut = s.getStatut() != null ? s.getStatut().getNom() : null;
         
         StatutsSignalement statut = statutRepository.findById(statutId)
                 .orElseThrow(() -> new Exception("Statut non trouvé"));
@@ -194,6 +213,10 @@ public class SignalementService {
         s.setLatitude(latitude);
         s.setLongitude(longitude);
         s.setStatut(statut);
+
+        if (typeId != null) {
+            typeRepository.findById(typeId).ifPresent(s::setType);
+        }
 
         signalementRepository.save(s);
 
@@ -228,8 +251,14 @@ public class SignalementService {
         s.setDetails(details);
         detailsRepository.save(details);
 
-        // Synchronisation Firebase
-        firestoreSyncService.syncSignalementToFirebase(s);
+        // Publication de l'événement pour synchronisation Firebase (Async)
+        eventPublisher.publishEvent(new SignalementSavedEvent(this, s));
+
+        // Envoyer une notification si le statut a changé
+        String newStatut = statut.getNom();
+        if (oldStatut != null && !oldStatut.equals(newStatut)) {
+            sendStatusChangeNotification(s, oldStatut, newStatut);
+        }
     }
 
     @Transactional
@@ -377,6 +406,9 @@ public class SignalementService {
         Signalement s = signalementRepository.findById(signalementId)
                 .orElseThrow(() -> new Exception("Signalement non trouvé"));
         
+        // Récupérer l'ancien statut
+        String oldStatut = s.getStatut() != null ? s.getStatut().getNom() : null;
+        
         StatutsSignalement statutEnCours = statutRepository.findByNom("en cours")
                 .orElseGet(() -> {
                     StatutsSignalement newStatut = new StatutsSignalement();
@@ -386,6 +418,87 @@ public class SignalementService {
         
         s.setStatut(statutEnCours);
         signalementRepository.save(s);
-        // La mise à jour Firebase est maintenant automatique via SignalementEntityListener
+        
+        // Publication de l'événement pour synchronisation Firebase (Async)
+        eventPublisher.publishEvent(new SignalementSavedEvent(this, s));
+
+        // Envoyer une notification de changement de statut
+        sendStatusChangeNotification(s, oldStatut, "en cours");
+    }
+
+    /**
+     * Envoie une notification de changement de statut à l'utilisateur
+     */
+    private void sendStatusChangeNotification(Signalement signalement, String oldStatus, String newStatus) {
+        try {
+            System.out.println("🔔 sendStatusChangeNotification appelé");
+            System.out.println("   - Signalement ID: " + signalement.getId());
+            System.out.println("   - ID Firebase: " + signalement.getIdFirebase());
+            System.out.println("   - Utilisateur: " + (signalement.getUtilisateur() != null ? signalement.getUtilisateur().getEmail() : "NULL"));
+            System.out.println("   - Changement: " + oldStatus + " -> " + newStatus);
+            
+            if (signalement.getUtilisateur() == null) {
+                System.err.println("❌ Pas d'utilisateur associé au signalement");
+                return;
+            }
+            
+            if (signalement.getIdFirebase() == null || signalement.getIdFirebase().isEmpty()) {
+                System.err.println("❌ Pas d'ID Firebase pour le signalement");
+                return;
+            }
+            
+            // Récupérer l'ID utilisateur Firebase depuis Firestore
+            String userEmail = signalement.getUtilisateur().getEmail();
+            System.out.println("📧 Email utilisateur: " + userEmail);
+            
+            String userId = getUserFirebaseId(userEmail);
+            System.out.println("🆔 Firebase UID obtenu: " + userId);
+            
+            if (userId == null || userId.isEmpty()) {
+                System.err.println("❌ Impossible de trouver l'UID Firebase pour l'email: " + userEmail);
+                return;
+            }
+            
+            // Envoyer la notification via le service FCM
+            System.out.println("📤 Envoi de la notification via FcmNotificationService...");
+            fcmNotificationService.notifyStatusChange(
+                signalement.getIdFirebase(),
+                oldStatus,
+                newStatus,
+                userId
+            );
+            System.out.println("✅ Notification envoyée avec succès");
+        } catch (Exception e) {
+            System.err.println("⚠️ Erreur lors de l'envoi de la notification: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Récupère l'ID Firebase d'un utilisateur à partir de son email
+     */
+    private String getUserFirebaseId(String email) {
+        try {
+            System.out.println("🔍 Recherche de l'UID Firebase pour l'email: " + email);
+            
+            com.google.cloud.firestore.Firestore db = com.google.firebase.cloud.FirestoreClient.getFirestore();
+            com.google.cloud.firestore.QuerySnapshot querySnapshot = db.collection("users")
+                .whereEqualTo("email", email)
+                .limit(1)
+                .get()
+                .get();
+            
+            if (!querySnapshot.isEmpty()) {
+                String uid = querySnapshot.getDocuments().get(0).getId();
+                System.out.println("✅ UID trouvé: " + uid);
+                return uid;
+            } else {
+                System.err.println("❌ Aucun utilisateur trouvé dans Firestore avec l'email: " + email);
+            }
+        } catch (Exception e) {
+            System.err.println("⚠️ Erreur lors de la récupération de l'ID Firebase: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return null;
     }
 }

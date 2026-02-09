@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
+import { getMessaging } from 'firebase/messaging';
 
 // Configuration Firebase pour le module mobile
 // Note: Dans un projet réel, ces valeurs devraient être dans un fichier .env
@@ -16,3 +17,4 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+export const messaging = getMessaging(app);

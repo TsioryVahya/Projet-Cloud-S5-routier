@@ -71,9 +71,12 @@ public class UtilisateurController {
     @PutMapping("/{id}")
     public ResponseEntity<Utilisateur> update(@PathVariable UUID id, @RequestBody Utilisateur entity) {
         Utilisateur existingUser = repository.findById(id).orElse(null);
-        if (existingUser == null) return ResponseEntity.notFound().build();
-        
-        // Mettre à jour les champs de l'objet existant au lieu de sauvegarder l'objet reçu
+        if (existingUser == null)
+            return ResponseEntity.notFound().build();
+
+        String oldEmail = existingUser.getEmail();
+
+        // Mettre à jour les champs de l'objet existant
         existingUser.setEmail(entity.getEmail());
         if (entity.getMotDePasse() != null && !entity.getMotDePasse().isEmpty()) {
             existingUser.setMotDePasse(entity.getMotDePasse());
@@ -81,11 +84,22 @@ public class UtilisateurController {
         existingUser.setRole(entity.getRole());
         existingUser.setStatutActuel(entity.getStatutActuel());
         existingUser.setDateDerniereModification(java.time.Instant.now());
-        
+
         Utilisateur saved = repository.save(existingUser);
+
         try {
+            // 1. Synchroniser l'utilisateur vers Firestore (en utilisant son ID unique)
             syncService.syncUserToFirestore(saved);
-        } catch (Exception e) {}
+
+            // 2. Si l'email a changé, mettre à jour les signalements correspondants dans
+            // Firestore
+            if (!saved.getEmail().equalsIgnoreCase(oldEmail)) {
+                syncService.updateEmailInFirestoreSignalements(oldEmail, saved.getEmail());
+            }
+        } catch (Exception e) {
+            System.err.println("⚠️ Erreur lors de la synchronisation après modification : " + e.getMessage());
+        }
+
         return ResponseEntity.ok(saved);
     }
 
