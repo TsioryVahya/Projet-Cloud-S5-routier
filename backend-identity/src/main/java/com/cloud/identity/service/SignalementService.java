@@ -488,8 +488,11 @@ public class SignalementService {
 
             // Envoyer la notification via le service FCM
             System.out.println("📤 Envoi de la notification via FcmNotificationService...");
+            String typeSignalement = (signalement.getType() != null) ? signalement.getType().getNom() : "Signalement";
+
             fcmNotificationService.notifyStatusChange(
                     signalement.getIdFirebase(),
+                    typeSignalement,
                     oldStatus,
                     newStatus,
                     userId,
@@ -513,7 +516,7 @@ public class SignalementService {
             System.out.println("🔍 Recherche de l'UID Firebase pour l'email: " + email);
 
             com.google.cloud.firestore.Firestore db = com.google.firebase.cloud.FirestoreClient.getFirestore();
-            com.google.cloud.firestore.QuerySnapshot querySnapshot = db.collection("users")
+            com.google.cloud.firestore.QuerySnapshot querySnapshot = db.collection("utilisateurs")
                     .whereEqualTo("email", email)
                     .limit(1)
                     .get()
@@ -535,22 +538,28 @@ public class SignalementService {
 
     /**
      * Récupère l'email d'un utilisateur depuis son UID Firebase (ID du document
-     * dans collection users)
+     * dans collection utilisateurs)
      */
     private String getEmailFromFirebaseUid(String firebaseUid) {
         try {
             System.out.println("🔍 Récupération de l'email pour l'UID Firebase: " + firebaseUid);
             com.google.cloud.firestore.Firestore db = com.google.firebase.cloud.FirestoreClient.getFirestore();
-            com.google.cloud.firestore.DocumentSnapshot doc = db.collection("users")
+
+            // Tenter d'abord dans la collection "utilisateurs" (priorité)
+            com.google.cloud.firestore.DocumentSnapshot doc = db.collection("utilisateurs")
                     .document(firebaseUid)
                     .get()
                     .get();
 
             if (doc.exists()) {
                 String email = doc.getString("email");
-                System.out.println("✅ Email trouvé pour l'UID " + firebaseUid + ": " + email);
+                System.out.println(
+                        "✅ Email trouvé dans collection 'utilisateurs' pour l'UID " + firebaseUid + ": " + email);
                 return email;
             }
+
+            System.err.println(
+                    "❌ Aucun utilisateur trouvé pour l'UID: " + firebaseUid + " dans 'utilisateurs'");
         } catch (Exception e) {
             System.err.println(
                     "⚠️ Erreur lors de la récupération de l'email pour l'UID " + firebaseUid + ": " + e.getMessage());
