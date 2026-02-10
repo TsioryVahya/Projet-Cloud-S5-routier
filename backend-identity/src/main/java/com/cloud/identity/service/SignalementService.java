@@ -91,7 +91,7 @@ public class SignalementService {
     public List<SignalementDTO> getAllSignalements() {
         return signalementRepository.findAllWithDetails().stream().map(s -> {
             SignalementDTO dto = new SignalementDTO();
-            dto.setPostgresId(s.getId().toString());
+            dto.setId(s.getId());
             dto.setLatitude(s.getLatitude());
             dto.setLongitude(s.getLongitude());
             dto.setIdFirebase(s.getIdFirebase());
@@ -233,7 +233,7 @@ public class SignalementService {
     @Transactional
     public void modifierSignalement(UUID id, Double latitude, Double longitude, Integer statutId,
             String description, Double surfaceM2, BigDecimal budget,
-            String entrepriseNom, List<String> photos, Integer typeId) throws Exception {
+            String entrepriseNom, List<String> photos, Integer typeId, Instant dateModification) throws Exception {
         Signalement s = signalementRepository.findById(id)
                 .orElseThrow(() -> new Exception("Signalement non trouvé"));
 
@@ -541,11 +541,16 @@ public class SignalementService {
                 return;
             }
 
-            // 1. Tenter de récupérer firebase_uid_utilisateur directement du document
-            // Firestore du signalement
-            String userId = getFirebaseUidFromSignalement(signalement.getIdFirebase());
+            // 1. Tenter de récupérer firebase_uid_utilisateur directement de l'entité Utilisateur
+            String userId = (signalement.getUtilisateur() != null) ? signalement.getUtilisateur().getFirebaseUid() : null;
 
-            // 2. Fallback sur l'ID Postgres si non trouvé
+            // 2. Fallback sur le document Firestore du signalement si non trouvé
+            if (userId == null || userId.isEmpty()) {
+                System.out.println("⚠️ firebaseUid non trouvé dans l'entité Utilisateur, recherche dans le document Firestore...");
+                userId = getFirebaseUidFromSignalement(signalement.getIdFirebase());
+            }
+
+            // 3. Fallback sur l'ID Postgres si toujours non trouvé
             if (userId == null || userId.isEmpty()) {
                 System.out.println(
                         "⚠️ firebase_uid_utilisateur non trouvé dans le document signalement, fallback sur l'ID Postgres");

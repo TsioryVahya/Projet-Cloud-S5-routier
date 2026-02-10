@@ -107,7 +107,7 @@ public class SignalementController {
             String dateStr = (String) data.get("dateModification");
             Instant dateModification = (dateStr != null && !dateStr.isEmpty()) ? Instant.parse(dateStr) : Instant.now();
 
-            signalementService.modifierSignalement(id, latitude, longitude, statutId, description, surfaceM2, budget, entrepriseConcerne, photoUrl, typeId, dateModification);
+            signalementService.modifierSignalement(id, latitude, longitude, statutId, description, surfaceM2, budget, entrepriseNom, photos, typeId, dateModification);
             return ResponseEntity.ok("Signalement modifié avec succès");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

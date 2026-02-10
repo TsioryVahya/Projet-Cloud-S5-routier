@@ -50,6 +50,9 @@ public class FirestoreSyncService {
     @Autowired
     private GalerieSignalementRepository galerieRepository;
 
+    @Autowired
+    private EntrepriseRepository entrepriseRepository;
+
     /**
      * Synchronise les utilisateurs de Firestore vers PostgreSQL.
      */
@@ -183,7 +186,6 @@ public class FirestoreSyncService {
         try {
             CollectionReference usersCol = firestore.collection("utilisateurs");
             Map<String, Object> data = new HashMap<>();
-            data.put("postgresId", user.getId().toString());
             data.put("firebaseUid", user.getFirebaseUid());
             data.put("email", user.getEmail());
             data.put("motDePasse", user.getMotDePasse());
@@ -211,9 +213,13 @@ public class FirestoreSyncService {
             System.out.println(
                     "📤 Sync vers Firestore [" + user.getEmail() + "] - FirebaseUID: " + user.getFirebaseUid());
 
-            // Utiliser le Firebase UID comme ID de document si disponible, sinon l'ID
-            // Postgres
-            String documentId = user.getFirebaseUid() != null ? user.getFirebaseUid() : user.getId().toString();
+            // Utiliser le Firebase UID comme ID de document
+            String documentId = user.getFirebaseUid();
+            if (documentId == null || documentId.isEmpty()) {
+                System.err.println("❌ Impossible de synchroniser l'utilisateur " + user.getEmail()
+                        + " : Firebase UID manquant");
+                return;
+            }
             usersCol.document(documentId).set(data).get();
         } catch (Exception e) {
             System.err.println("Erreur lors de la synchronisation de l'utilisateur " + user.getEmail()
@@ -385,7 +391,17 @@ public class FirestoreSyncService {
                 details.setDescription(description);
                 details.setSurfaceM2(surfaceM2);
                 details.setBudget(budget);
-                details.setEntrepriseConcerne(entrepriseConcerne);
+                
+                if (entrepriseConcerne != null && !entrepriseConcerne.isEmpty()) {
+                    final String nomEntreprise = entrepriseConcerne;
+                    Entreprise entreprise = entrepriseRepository.findByNom(nomEntreprise)
+                            .orElseGet(() -> {
+                                Entreprise e = new Entreprise();
+                                e.setNom(nomEntreprise);
+                                return entrepriseRepository.save(e);
+                            });
+                    details.setEntreprise(entreprise);
+                }
 
                 // Gérer la galerie
                 if (galerieFirestore != null && !galerieFirestore.isEmpty()) {
@@ -462,7 +478,6 @@ public class FirestoreSyncService {
     public String createSignalementInFirestore(Signalement signalement, SignalementsDetail details) {
         try {
             Map<String, Object> data = new HashMap<>();
-            data.put("postgresId", signalement.getId().toString());
             data.put("latitude", signalement.getLatitude());
             data.put("longitude", signalement.getLongitude());
             data.put("dateSignalement",
@@ -541,7 +556,6 @@ public class FirestoreSyncService {
             if (signalement.getDateDerniereModification() != null) {
                 updates.put("date_derniere_modification", signalement.getDateDerniereModification().toString());
             }
-            updates.put("postgresId", signalement.getId().toString());
             updates.put("latitude", signalement.getLatitude());
             updates.put("longitude", signalement.getLongitude());
 

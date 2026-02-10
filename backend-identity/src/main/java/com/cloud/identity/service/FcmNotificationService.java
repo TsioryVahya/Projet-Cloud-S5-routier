@@ -186,22 +186,8 @@ public class FcmNotificationService {
                     }
                 }
 
-                // 2. Si non trouvé par ID doc, chercher dans les champs firebaseUid ou
-                // postgresId à l'intérieur du document
-                // Cela aide si l'ID passé est le postgresId mais que le doc est indexé par
-                // firebaseUid (ou vice-versa)
-                QuerySnapshot queryPostgres = db.collection(coll).whereEqualTo("postgresId", uid).get().get();
-                for (DocumentSnapshot d : queryPostgres.getDocuments()) {
-                    if (d.contains("fcmToken")) {
-                        String token = d.getString("fcmToken");
-                        if (token != null && !token.isEmpty()) {
-                            logger.info("✅ FCM token trouvé via champ postgresId [{}] dans la collection '{}'", uid,
-                                    coll);
-                            return token;
-                        }
-                    }
-                }
-
+                // 2. Si non trouvé par ID doc, chercher dans le champ firebaseUid à l'intérieur du document
+                // Cela aide si l'ID passé est le firebaseUid mais que le doc est indexé par un autre ID
                 QuerySnapshot queryFirebase = db.collection(coll).whereEqualTo("firebaseUid", uid).get().get();
                 for (DocumentSnapshot d : queryFirebase.getDocuments()) {
                     if (d.contains("fcmToken")) {

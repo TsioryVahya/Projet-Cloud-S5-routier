@@ -13,9 +13,10 @@ export interface TypeSignalement {
 
 export interface Signalement {
   id?: string;
-  postgresId?: string;
+  firebaseUidUtilisateur?: string;
   idFirebase?: string;
   dateSignalement: string;
+  dateDerniereModification?: string;
   statut: string;
   typeNom?: string;
   typeIcone?: string;

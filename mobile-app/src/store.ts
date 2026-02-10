@@ -24,7 +24,6 @@ export interface AppUser {
   email: string;
   role?: string;
   statut?: string;
-  postgresId?: string;
   firebaseUid?: string;
   expiresAt?: string;
 }

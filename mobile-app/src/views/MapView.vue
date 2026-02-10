@@ -408,7 +408,7 @@ const handleLogin = async () => {
       email: userData.email,
       role: userData.role,
       statut: userData.statut,
-      postgresId: userData.id // On utilise le champ 'id' de Firestore qui contient le UUID
+      firebaseUid: userDoc.id
     };
     // 4. Vérifier le mot de passe
     if (userData.motDePasse === password) {
@@ -424,7 +424,6 @@ const handleLogin = async () => {
         email: userData.email,
         role: userData.role,
         statut: userData.statut,
-        postgresId: userData.postgresId,
         firebaseUid: userDoc.id, // L'ID du document est le Firebase UID
         expiresAt: expiresAt
       };

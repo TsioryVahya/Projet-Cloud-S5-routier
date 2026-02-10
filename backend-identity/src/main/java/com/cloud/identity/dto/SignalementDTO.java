@@ -3,6 +3,8 @@ package com.cloud.identity.dto;
 import java.math.BigDecimal;
 
 public class SignalementDTO {
+    private java.util.UUID id;
+
     @com.google.cloud.firestore.annotation.PropertyName("photo_url")
     private String photoUrl;
 
@@ -33,7 +35,9 @@ public class SignalementDTO {
     @com.google.cloud.firestore.annotation.PropertyName("date_derniere_modification")
     private Object dateDerniereModification;
 
-    private String postgresId;
+    @com.google.cloud.firestore.annotation.PropertyName("firebase_uid_utilisateur")
+    private String firebaseUidUtilisateur;
+
     private Double latitude;
     private Double longitude;
     private String description;
@@ -51,6 +55,14 @@ public class SignalementDTO {
     private Integer idTypeSignalement;
 
     private UtilisateurDTO utilisateur;
+
+    public java.util.UUID getId() {
+        return id;
+    }
+
+    public void setId(java.util.UUID id) {
+        this.id = id;
+    }
 
     public static class UtilisateurDTO {
         private String email;
@@ -96,12 +108,14 @@ public class SignalementDTO {
         this.typeCouleur = typeCouleur;
     }
 
-    public String getPostgresId() {
-        return postgresId;
+    @com.google.cloud.firestore.annotation.PropertyName("firebase_uid_utilisateur")
+    public String getFirebaseUidUtilisateur() {
+        return firebaseUidUtilisateur;
     }
 
-    public void setPostgresId(String postgresId) {
-        this.postgresId = postgresId;
+    @com.google.cloud.firestore.annotation.PropertyName("firebase_uid_utilisateur")
+    public void setFirebaseUidUtilisateur(String firebaseUidUtilisateur) {
+        this.firebaseUidUtilisateur = firebaseUidUtilisateur;
     }
 
     public Double getLatitude() {

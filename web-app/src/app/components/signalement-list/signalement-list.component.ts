@@ -138,15 +138,17 @@ export class SignalementListComponent implements OnInit {
     const currentStatus = this.statuses.find(st => String(st.nom || '').toLowerCase() === signalementStatut);
     
     this.editingSignalement = {
-      id: signalement.postgresId || signalement.id,
+      id: signalement.id,
       latitude: signalement.latitude,
       longitude: signalement.longitude,
       statutId: currentStatus ? currentStatus.id : 1, // Fallback au premier statut si non trouvé
       description: signalement.description || '',
       budget: signalement.budget || 0,
       surfaceM2: signalement.surfaceM2 || 0,
-      entrepriseConcerne: signalement.entrepriseConcerne || '',
-      dateModification: new Date().toISOString().slice(0, 16) // Format YYYY-MM-DDTHH:mm
+      entrepriseNom: signalement.entrepriseNom || signalement.entrepriseConcerne || '',
+      dateModification: signalement.dateDerniereModification 
+        ? new Date(signalement.dateDerniereModification).toISOString().slice(0, 16)
+        : new Date().toISOString().slice(0, 16)
     };
     this.showEditModal = true;
   }
@@ -181,30 +183,6 @@ export class SignalementListComponent implements OnInit {
     });
   }
 
-  onStatusChange(signalement: Signalement, newStatusId: string): void {
-    const id = signalement.postgresId || signalement.id;
-    if (!id) return;
-
-    const updateData = {
-      statutId: parseInt(newStatusId),
-      latitude: signalement.latitude,
-      longitude: signalement.longitude,
-      description: signalement.description,
-      budget: signalement.budget,
-      surfaceM2: signalement.surfaceM2,
-      entrepriseConcerne: signalement.entrepriseConcerne,
-      // Par défaut, on prend "maintenant" pour le changement rapide
-      dateModification: new Date().toISOString()
-    };
-
-    this.signalementService.updateSignalement(id, updateData).subscribe({
-      next: () => {
-        this.loadSignalements();
-      },
-      error: (err) => console.error(err)
-    });
-  }
-
   syncFromMobile(): void {
     this.isSyncing = true;
     this.syncMessage = 'Synchronisation en cours...';
@@ -236,11 +214,11 @@ export class SignalementListComponent implements OnInit {
   getStatusClass(statut: any): string {
     const s = String(statut || '').toLowerCase();
     if (s === 'nouveau') {
-      return 'bg-blue-50 text-blue-600 border-blue-100 focus:ring-blue-500';
+      return 'bg-blue-50 text-blue-600 border-blue-100';
     } else if (s === 'en cours' || s === 'en_cours') {
-      return 'bg-amber-50 text-amber-600 border-amber-100 focus:ring-amber-500';
+      return 'bg-amber-50 text-amber-600 border-amber-100';
     }
-    return 'bg-green-50 text-green-600 border-green-100 focus:ring-green-500';
+    return 'bg-green-50 text-green-600 border-green-100';
   }
 
   deleteSignalement(id: string | undefined): void {
@@ -261,7 +239,7 @@ export class SignalementListComponent implements OnInit {
 
     const term = this.searchTerm.toLowerCase().trim();
     this.filteredSignalements = this.signalements.filter(s => {
-      const idStr = (s.postgresId || s.id || '').toString().toLowerCase();
+      const idStr = (s.id || '').toString().toLowerCase();
       const typeStr = (s.typeNom || '').toLowerCase();
       const descStr = (s.description || '').toLowerCase();
       const emailStr = (s.utilisateur?.email || '').toLowerCase();

@@ -45,9 +45,9 @@ public class FirebaseSignalementListener {
                                     String docId = dc.getDocument().getId();
                                     System.out.println("Nouveau document Firebase détecté : " + docId);
                                     
-                                    // Vérifier si le document contient déjà un postgresId (pour éviter les boucles)
-                                    if (dc.getDocument().contains("postgresId") && dc.getDocument().get("postgresId") != null) {
-                                        System.out.println("Document " + docId + " ignoré (déjà synchronisé avec PostgresId : " + dc.getDocument().get("postgresId") + ")");
+                                    // Vérifier si le document contient déjà un id_firebase (pour éviter les boucles)
+                                    if (dc.getDocument().contains("id_firebase") && dc.getDocument().get("id_firebase") != null) {
+                                        System.out.println("Document " + docId + " ignoré (déjà synchronisé avec id_firebase : " + dc.getDocument().get("id_firebase") + ")");
                                         continue;
                                     }
 
