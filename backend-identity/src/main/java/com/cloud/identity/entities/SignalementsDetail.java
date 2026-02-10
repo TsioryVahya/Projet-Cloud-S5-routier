@@ -37,6 +37,9 @@ public class SignalementsDetail {
     @JoinColumn(name = "galerie_id")
     private GalerieSignalement galerie;
 
+    @Column(name = "niveau")
+    private Integer niveau;
+
     public UUID getId() {
         return id;
     }
@@ -91,5 +94,13 @@ public class SignalementsDetail {
 
     public void setGalerie(GalerieSignalement galerie) {
         this.galerie = galerie;
+    }
+
+    public Integer getNiveau() {
+        return niveau;
+    }
+
+    public void setNiveau(Integer niveau) {
+        this.niveau = niveau;
     }
 }

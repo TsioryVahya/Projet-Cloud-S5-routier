@@ -110,7 +110,8 @@ CREATE TABLE signalements_details (
     surface_m2 DOUBLE PRECISION,
     budget DECIMAL(15, 2),
     entreprise_id INT REFERENCES entreprises(id),
-    galerie_id UUID -- Sera lié à la galerie si besoin d'une photo principale ou groupe
+    galerie_id UUID, -- Sera lié à la galerie si besoin d'une photo principale ou groupe
+    niveau INT -- Niveau du signalement de 1 à 10
 );
 
 -- Table de la Galerie des Signalements (Multiples images)
@@ -238,3 +239,15 @@ CREATE TRIGGER trg_signalement_statut_history
 AFTER INSERT OR UPDATE OF statut_id ON signalements
 FOR EACH ROW
 EXECUTE FUNCTION fn_historiser_statut_signalement();
+
+-- Table des Prix au m² (Historique des prix)
+CREATE TABLE prix_m2 (
+    id SERIAL PRIMARY KEY,
+    montant DECIMAL(15, 2) NOT NULL,
+    date_debut TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    date_fin TIMESTAMP,
+    date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insertion d'un prix initial
+INSERT INTO prix_m2 (montant, date_debut) VALUES (150000.00, '2025-01-01 00:00:00');

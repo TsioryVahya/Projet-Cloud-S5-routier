@@ -41,6 +41,10 @@ export const routes: Routes = [
         path: 'types-signalement/edit/:id',
         loadComponent: () => import('./components/report-type-form/report-type-form.component').then(m => m.ReportTypeFormComponent)
       },
+      {
+        path: 'prix-m2',
+        loadComponent: () => import('./components/prix-m2-list/prix-m2-list.component').then(m => m.PrixM2ListComponent)
+      },
       { path: '', redirectTo: 'overview', pathMatch: 'full' }
     ]
   },

@@ -5,6 +5,7 @@ import com.cloud.identity.entities.Signalement;
 import com.cloud.identity.entities.SignalementsDetail;
 import com.cloud.identity.repository.SignalementsDetailRepository;
 import com.cloud.identity.service.SignalementService;
+import com.cloud.identity.repository.SignalementRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,8 +14,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/signalements")
@@ -23,6 +24,9 @@ public class SignalementController {
 
     @Autowired
     private SignalementService signalementService;
+
+    @Autowired
+    private SignalementRepository signalementRepository;
 
     @Autowired
     private SignalementsDetailRepository detailsRepository;
@@ -44,6 +48,15 @@ public class SignalementController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Unknown error", "type", e.getClass().getName()));
+        }
+    }
+
+    @GetMapping("/recap")
+    public ResponseEntity<?> getRecap() {
+        try {
+            return ResponseEntity.ok(signalementRepository.getRecapitulatifGlobal());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
         }
     }
 
@@ -74,7 +87,9 @@ public class SignalementController {
             Integer typeId = data.get("typeId") != null ? Integer.valueOf(data.get("typeId").toString()) : 
                              (data.get("id_type_signalement") != null ? Integer.valueOf(data.get("id_type_signalement").toString()) : null);
 
-            signalementService.creerSignalement(latitude, longitude, description, email, surfaceM2, budget, entrepriseNom, photos, typeId);
+            Integer niveau = data.get("niveau") != null ? Integer.valueOf(data.get("niveau").toString()) : null;
+
+            signalementService.creerSignalement(latitude, longitude, description, email, surfaceM2, budget, entrepriseNom, photos, typeId, niveau);
             return ResponseEntity.ok(Map.of("message", "Signalement créé avec succès"));
         } catch (Exception e) {
             e.printStackTrace();
@@ -110,10 +125,13 @@ public class SignalementController {
             String dateStr = (String) data.get("dateModification");
             Instant dateModification = (dateStr != null && !dateStr.isEmpty()) ? Instant.parse(dateStr) : Instant.now();
 
-            signalementService.modifierSignalement(id, latitude, longitude, statutId, description, surfaceM2, budget, entrepriseNom, photos, typeId, dateModification);
-            return ResponseEntity.ok("Signalement modifié avec succès");
+            Integer niveau = data.get("niveau") != null ? Integer.valueOf(data.get("niveau").toString()) : null;
+
+            signalementService.modifierSignalement(id, latitude, longitude, statutId, description, surfaceM2, budget, entrepriseNom, photos, typeId, dateModification, niveau);
+            return ResponseEntity.ok(Map.of("message", "Signalement modifié avec succès"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Unknown error"));
         }
     }
 
@@ -121,9 +139,10 @@ public class SignalementController {
     public ResponseEntity<?> delete(@PathVariable UUID id) {
         try {
             signalementService.supprimerSignalement(id);
-            return ResponseEntity.ok("Signalement supprimé avec succès");
+            return ResponseEntity.ok(Map.of("message", "Signalement supprimé avec succès"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Unknown error"));
         }
     }
 }

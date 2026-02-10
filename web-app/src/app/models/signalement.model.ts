@@ -16,6 +16,7 @@ export interface Signalement {
   postgresId?: string;
   idFirebase?: string;
   dateSignalement: string;
+  dateModification?: string;
   statut: string;
   typeNom?: string;
   typeIcone?: string;
@@ -25,6 +26,7 @@ export interface Signalement {
   description?: string;
   surfaceM2?: number;
   budget?: any;
+  niveau?: number;
   entrepriseNom?: string;
   galerie?: Array<{url: string}>;
   utilisateur?: {

@@ -51,6 +51,14 @@
 }
 
 /* Scrollbar Styling */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 .custom-scrollbar::-webkit-scrollbar {
   width: 5px;
 }

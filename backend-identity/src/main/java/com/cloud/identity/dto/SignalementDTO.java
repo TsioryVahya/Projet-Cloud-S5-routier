@@ -35,6 +35,7 @@ public class SignalementDTO {
     private Double longitude;
     private String description;
     private BigDecimal budget;
+    private Integer niveau;
     private String statut;
     private String typeNom;
     private String typeIcone;
@@ -131,6 +132,14 @@ public class SignalementDTO {
 
     public void setBudget(BigDecimal budget) {
         this.budget = budget;
+    }
+
+    public Integer getNiveau() {
+        return niveau;
+    }
+
+    public void setNiveau(Integer niveau) {
+        this.niveau = niveau;
     }
 
     public java.util.List<GalerieItemDTO> getGalerie() {

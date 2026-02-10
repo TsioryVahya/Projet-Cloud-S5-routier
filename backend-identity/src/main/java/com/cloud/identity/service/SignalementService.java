@@ -125,6 +125,7 @@ public class SignalementService {
                 dto.setDescription(d.getDescription());
                 dto.setSurfaceM2(d.getSurfaceM2());
                 dto.setBudget(d.getBudget());
+                dto.setNiveau(d.getNiveau());
                 dto.setEntrepriseId(d.getEntreprise() != null ? d.getEntreprise().getId() : null);
                 dto.setEntrepriseNom(d.getEntreprise() != null ? d.getEntreprise().getNom() : null);
                 
@@ -160,7 +161,7 @@ public class SignalementService {
     @Transactional
     public void creerSignalement(Double latitude, Double longitude, String description, String email,
             Double surfaceM2, BigDecimal budget, String entrepriseNom, List<String> photos,
-            Integer typeId) throws Exception {
+            Integer typeId, Integer niveau) throws Exception {
         Utilisateur utilisateur = utilisateurRepository.findByEmail(email)
                 .orElseThrow(() -> new Exception("Utilisateur non trouvé"));
 
@@ -190,6 +191,7 @@ public class SignalementService {
         details.setDescription(description);
         details.setSurfaceM2(surfaceM2);
         details.setBudget(budget);
+        details.setNiveau(niveau);
 
         if (entrepriseNom != null && !entrepriseNom.isEmpty()) {
             Entreprise entreprise = entrepriseRepository.findByNom(entrepriseNom)
@@ -232,7 +234,7 @@ public class SignalementService {
     @Transactional
     public void modifierSignalement(UUID id, Double latitude, Double longitude, Integer statutId,
             String description, Double surfaceM2, BigDecimal budget,
-            String entrepriseNom, List<String> photos, Integer typeId, Instant dateModification) throws Exception {
+            String entrepriseNom, List<String> photos, Integer typeId, Instant dateModification, Integer niveau) throws Exception {
         
         Signalement s = signalementRepository.findById(id)
                 .orElseThrow(() -> new Exception("Signalement non trouvé"));
@@ -267,6 +269,7 @@ public class SignalementService {
         details.setDescription(description);
         details.setSurfaceM2(surfaceM2);
         details.setBudget(budget);
+        details.setNiveau(niveau);
 
         if (entrepriseNom != null && !entrepriseNom.isEmpty()) {
             Entreprise entreprise = entrepriseRepository.findByNom(entrepriseNom)
@@ -428,6 +431,7 @@ public class SignalementService {
         SignalementsDetail details = new SignalementsDetail();
         details.setSignalement(s);
         details.setDescription(dto.getDescription());
+        details.setNiveau(dto.getNiveau());
 
         // Gestion de la surface (peut être Long ou Double dans Firestore)
         if (dto.getSurfaceM2() != null) {

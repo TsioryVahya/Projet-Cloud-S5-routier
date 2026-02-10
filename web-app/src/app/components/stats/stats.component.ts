@@ -28,8 +28,31 @@ export class StatsComponent implements OnInit {
     avgCompletionTime: 4.2
   };
 
+  avgTimeStats: any[] = [];
+  recapData: any = null;
+
   ngOnInit(): void {
     this.loadStats();
+    this.loadAvgTimeStats();
+    this.loadRecapData();
+  }
+
+  loadRecapData(): void {
+    this.signalementService.getRecapitulatif().subscribe({
+      next: (data) => {
+        this.recapData = data;
+      },
+      error: (err) => console.error(err)
+    });
+  }
+
+  loadAvgTimeStats(): void {
+    this.signalementService.getAverageProcessingTime().subscribe({
+      next: (data) => {
+        this.avgTimeStats = data;
+      },
+      error: (err) => console.error(err)
+    });
   }
 
   loadStats(): void {
