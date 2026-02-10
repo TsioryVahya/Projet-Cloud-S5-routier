@@ -2,27 +2,33 @@
   <ion-page>
     <ion-tabs>
       <ion-router-outlet></ion-router-outlet>
-      <ion-tab-bar slot="bottom" class="border-t border-slate-100 h-16 backdrop-blur-lg shadow-lg">
-        <ion-tab-button tab="map" href="/tabs/map">
-          <ion-icon :icon="mapOutline" />
-          <ion-label class="hidden-label">Carte</ion-label>
-        </ion-tab-button>
+      <ion-tab-bar slot="bottom" class="border-t-0 h-20 bg-transparent px-4 pb-4">
+        <div class="flex w-full bg-white/90 backdrop-blur-xl rounded-[28px] shadow-2xl shadow-black/5 border border-white/50 overflow-hidden h-full items-center px-2">
+          <ion-tab-button tab="map" href="/tabs/map" class="bg-transparent">
+            <ion-icon :icon="mapOutline" />
+            <span class="text-[10px] font-black uppercase tracking-tighter mt-1">Carte</span>
+          </ion-tab-button>
 
-        <ion-tab-button tab="list" href="/tabs/list">
-          <ion-icon :icon="listOutline" />
-          <ion-badge v-if="store.signalements.length > 0" color="primary" class="custom-badge">
-            {{ store.signalements.length }}
-          </ion-badge>
-          <ion-label class="hidden-label">Liste</ion-label>
-        </ion-tab-button>
+          <ion-tab-button tab="list" href="/tabs/list" class="bg-transparent">
+            <div class="relative">
+              <ion-icon :icon="listOutline" />
+              <ion-badge v-if="store.signalements.length > 0" color="primary" class="custom-badge-new">
+                {{ store.signalements.length }}
+              </ion-badge>
+            </div>
+            <span class="text-[10px] font-black uppercase tracking-tighter mt-1">Travaux</span>
+          </ion-tab-button>
 
-        <ion-tab-button tab="notifications" href="/tabs/notifications">
-          <ion-icon :icon="notificationsOutline" />
-          <ion-badge v-if="notificationService.unreadCount.value > 0" color="danger" class="custom-badge">
-            {{ notificationService.unreadCount.value }}
-          </ion-badge>
-          <ion-label class="hidden-label">Notifications</ion-label>
-        </ion-tab-button>
+          <ion-tab-button tab="notifications" href="/tabs/notifications" class="bg-transparent">
+            <div class="relative">
+              <ion-icon :icon="notificationsOutline" />
+              <ion-badge v-if="notificationService.unreadCount.value > 0" color="danger" class="custom-badge-new">
+                {{ notificationService.unreadCount.value }}
+              </ion-badge>
+            </div>
+            <span class="text-[10px] font-black uppercase tracking-tighter mt-1">Notifications</span>
+          </ion-tab-button>
+        </div>
       </ion-tab-bar>
     </ion-tabs>
   </ion-page>
@@ -38,36 +44,37 @@ import { notificationService } from '../services/notificationService';
 
 <style scoped>
 ion-tab-bar {
-  --background: rgba(255, 255, 255, 0.8);
+  --background: transparent;
+  --border: none;
 }
 
 ion-tab-button {
   --color: #94a3b8; /* slate-400 */
   --color-selected: #2563eb; /* blue-600 */
-  transition: all 0.2s ease;
+  --background: transparent;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 ion-icon {
-  font-size: 24px;
+  font-size: 22px;
+  margin-bottom: 2px;
 }
 
-.hidden-label {
-  display: none;
-}
-
-.custom-badge {
+.custom-badge-new {
   position: absolute;
-  top: 8px;
-  right: calc(50% - 18px);
+  top: -8px;
+  right: -12px;
   --padding-start: 4px;
   --padding-end: 4px;
   min-width: 16px;
   height: 16px;
   font-size: 9px;
+  font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 2px solid white;
   border-radius: 50%;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 </style>

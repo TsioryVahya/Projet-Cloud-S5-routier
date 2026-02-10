@@ -90,7 +90,8 @@ CREATE TABLE signalements (
     latitude DOUBLE PRECISION NOT NULL,
     longitude DOUBLE PRECISION NOT NULL,
     utilisateur_id UUID REFERENCES utilisateurs(id),
-    firebase_uid_utilisateur VARCHAR(255) -- UUID Firebase de l'utilisateur qui a créé le signalement
+    firebase_uid_utilisateur VARCHAR(255), -- UUID Firebase de l'utilisateur qui a créé le signalement
+    date_derniere_modification TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Table des Entreprises
@@ -109,8 +110,20 @@ CREATE TABLE signalements_details (
     surface_m2 DOUBLE PRECISION,
     budget DECIMAL(15, 2),
     entreprise_id INT REFERENCES entreprises(id),
-    photo_url TEXT
+    galerie_id UUID, -- Sera lié à la galerie si besoin d'une photo principale ou groupe
+    niveau INT -- Niveau du signalement de 1 à 10
 );
+
+-- Table de la Galerie des Signalements (Multiples images)
+CREATE TABLE galerie_signalement (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id_signalement UUID REFERENCES signalements(id) ON DELETE CASCADE,
+    photo_url TEXT NOT NULL,
+    date_ajout TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Ajout d'une clé étrangère optionnelle de signalements_details vers galerie_signalement si on veut pointer vers une image spécifique
+ALTER TABLE signalements_details ADD CONSTRAINT fk_signalements_details_galerie FOREIGN KEY (galerie_id) REFERENCES galerie_signalement(id);
 
 
 -- Table Historique des Statuts de Signalement
@@ -198,3 +211,43 @@ INSERT INTO types_signalement (nom, description, icone_path, couleur) VALUES
 INSERT INTO historique_utilisateur (utilisateur_id, statut_id)
 SELECT id, statut_actuel_id FROM utilisateurs WHERE email = 'tsiory@gmail.com'
 ON CONFLICT DO NOTHING;
+
+-- Trigger pour historiser automatiquement les changements de statut des signalements
+CREATE OR REPLACE FUNCTION fn_historiser_statut_signalement()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Si c'est une insertion OU si le statut a changé
+    IF (TG_OP = 'INSERT') OR (OLD.statut_id IS DISTINCT FROM NEW.statut_id) THEN
+        -- On insère seulement si le dernier statut dans l'historique est différent
+        -- (Utile pour éviter les doublons lors de synchronisations répétées)
+        IF NOT EXISTS (
+            SELECT 1 FROM historique_signalement 
+            WHERE signalement_id = NEW.id 
+            AND statut_id = NEW.statut_id
+            ORDER BY date_changement DESC LIMIT 1
+        ) THEN
+            INSERT INTO historique_signalement (signalement_id, statut_id, date_changement)
+            VALUES (NEW.id, NEW.statut_id, COALESCE(NEW.date_derniere_modification, CURRENT_TIMESTAMP));
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_signalement_statut_history ON signalements;
+CREATE TRIGGER trg_signalement_statut_history
+AFTER INSERT OR UPDATE OF statut_id ON signalements
+FOR EACH ROW
+EXECUTE FUNCTION fn_historiser_statut_signalement();
+
+-- Table des Prix au m² (Historique des prix)
+CREATE TABLE prix_m2 (
+    id SERIAL PRIMARY KEY,
+    montant DECIMAL(15, 2) NOT NULL,
+    date_debut TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    date_fin TIMESTAMP,
+    date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insertion d'un prix initial
+INSERT INTO prix_m2 (montant, date_debut) VALUES (150000.00, '2025-01-01 00:00:00');

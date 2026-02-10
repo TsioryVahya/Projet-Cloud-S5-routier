@@ -8,6 +8,7 @@ export interface Notification {
   id: string;
   userId: string;
   signalementId: string;
+  typeSignalement?: string;
   titre: string;
   message: string;
   type: 'status_change' | 'other';
@@ -49,29 +50,43 @@ class NotificationService {
         return;
       }
 
-      // Utiliser soit Firebase Auth, soit le store custom
-      const userEmail = auth.currentUser?.email || store.user?.email;
-      const userId = auth.currentUser?.uid || store.user?.postgresId;
+      // Utiliser les identifiants du store qui sont synchronisés avec Postgres
+      const userEmail = store.user?.email || auth.currentUser?.email;
+      // L'ID du document dans Firestore est soit le firebaseUid (UUID) soit le postgresId
+      const userId = store.user?.firebaseUid || store.user?.postgresId || auth.currentUser?.uid;
 
       if (!userEmail || !userId) {
-        console.warn('⚠️ Utilisateur non identifié, impossible de sauvegarder le token');
+        console.warn('⚠️ Utilisateur non identifié (email ou ID manquant), impossible de sauvegarder le token');
         return;
       }
       
       console.log('👤 Utilisateur:', userEmail);
-      console.log('🆔 ID utilisé:', userId);
+      console.log('🆔 ID document utilisé:', userId);
 
-      // 1. Sauvegarder d'abord l'email dans Firestore (important pour le backend)
-      // On le fait avant getToken car getToken peut échouer en localhost
+      // 1. Sauvegarder/Mettre à jour le document utilisateur complet
       try {
-        const userDocRef = doc(db, 'users', userId);
-        await setDoc(userDocRef, {
+        const userDocRef = doc(db, 'utilisateurs', userId);
+        
+        // Préparer les données selon la structure exacte demandée par l'utilisateur
+        const userData: any = {
           email: userEmail,
+          postgresId: store.user?.postgresId || null,
+          firebaseUid: store.user?.firebaseUid || userId, // Utilise l'ID doc si non dispo
+          role: store.user?.role || 'UTILISATEUR',
+          statut: store.user?.statut || 'ACTIF',
+          derniereConnexion: new Date().toISOString(),
+          // On garde les champs demandés même s'ils sont null ou gérés par le backend
+          date_deblocage_automatique: null,
+          tentatives_connexion: 0,
+          date_derniere_modification: Timestamp.now(),
           lastTokenUpdate: Timestamp.now()
-        }, { merge: true });
-        console.log('✅ Email utilisateur sauvegardé dans Firestore');
+        };
+
+        // Utiliser merge: true pour NE PAS effacer les champs comme motDePasse ou dateCreation
+        await setDoc(userDocRef, userData, { merge: true });
+        console.log('✅ Document utilisateur mis à jour dans la collection utilisateurs avec tous les champs');
       } catch (err) {
-        console.error('❌ Erreur lors de la sauvegarde de l\'email dans Firestore:', err);
+        console.error('❌ Erreur lors de la mise à jour du document utilisateur:', err);
       }
       
       console.log('🔐 Tentative d\'obtention du FCM token...');
@@ -84,14 +99,18 @@ class NotificationService {
         if (currentToken) {
           console.log('📱 FCM Token obtenu:', currentToken);
           
-          // Sauvegarder le token dans Firestore
-          const userDocRef = doc(db, 'users', userId);
+          // Sauvegarder le token dans le MÊME document
+          const userDocRef = doc(db, 'utilisateurs', userId);
           await setDoc(userDocRef, {
             fcmToken: currentToken,
-            lastTokenUpdate: Timestamp.now()
+            lastTokenUpdate: Timestamp.now(),
+            // S'assurer que les champs essentiels sont là au cas où
+            email: userEmail,
+            firebaseUid: store.user?.firebaseUid || null,
+            postgresId: store.user?.postgresId || null
           }, { merge: true });
           
-          console.log('✅ FCM Token sauvegardé dans Firestore pour l\'utilisateur:', userId);
+          console.log('✅ FCM Token sauvegardé dans le document utilisateur:', userId);
         } else {
           console.warn('⚠️ Impossible d\'obtenir le FCM token');
           console.warn('💡 Cela peut être normal en développement local (localhost)');
@@ -130,7 +149,8 @@ class NotificationService {
 
   async loadNotifications() {
     try {
-      const userId = auth.currentUser?.uid || store.user?.postgresId;
+      // Utiliser le même ID que celui utilisé pour le document utilisateur (le UUID)
+      const userId = store.user?.firebaseUid || store.user?.postgresId || auth.currentUser?.uid;
 
       if (!userId) {
         console.warn('⚠️ Utilisateur non identifié, impossible de charger les notifications');
@@ -149,7 +169,7 @@ class NotificationService {
       // Créer une requête pour les notifications de l'utilisateur
       const notificationsRef = collection(db, 'notifications');
       
-      // Requête simple sans orderBy pour éviter l'erreur d'index
+      // On cherche les notifications par userId (qui doit être le UUID)
       const q = query(
         notificationsRef,
         where('userId', '==', userId)

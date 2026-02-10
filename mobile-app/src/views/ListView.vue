@@ -98,8 +98,8 @@
               
               <div class="flex gap-2">
                 <button 
-                  v-if="s.photo_url"
-                  @click="selectedImageUrl = s.photo_url"
+                  v-if="s.galerie && s.galerie.length > 0"
+                  @click="selectedImageUrl = s.galerie[0].url"
                   class="text-slate-600 text-xs font-bold flex items-center gap-1 bg-slate-100 px-3 py-1.5 rounded-lg hover:bg-slate-200 transition-colors"
                 >
                   <ion-icon :icon="cameraOutline" />

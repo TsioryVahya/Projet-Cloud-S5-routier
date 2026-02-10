@@ -7,6 +7,7 @@
 backend-identity/target/
 web-app/dist/
 web-app/.angular/
+web-app/node_modules/
 mobile-app/dist/
 mobile-app/node_modules/
 

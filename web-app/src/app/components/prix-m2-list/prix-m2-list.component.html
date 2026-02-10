@@ -1,0 +1,124 @@
+<div class="p-6 space-y-8 bg-slate-50 min-h-screen">
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-black text-slate-800 tracking-tight">Gestion des Prix au m²</h1>
+      <p class="text-slate-500 font-medium mt-1">Gérez l'historique des tarifs appliqués aux travaux</p>
+    </div>
+    
+    <button (click)="addNewPrice()" 
+            class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-sm transition-all shadow-lg shadow-blue-200 active:scale-95 group">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform group-hover:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" />
+      </svg>
+      Ajouter un prix
+    </button>
+  </div>
+
+  <!-- Table Container -->
+  <div class="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-slate-50/50 border-b border-slate-100">
+            <th class="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Montant (MGA)</th>
+            <th class="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date de Début</th>
+            <th class="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date de Fin</th>
+            <th class="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50">
+          <tr *ngFor="let p of prices" class="hover:bg-slate-50/30 transition-colors group">
+            <!-- Montant -->
+            <td class="px-8 py-6">
+              <div class="relative max-w-[200px]">
+                <input type="number" 
+                       [(ngModel)]="p.montant" 
+                       (blur)="savePrice(p)"
+                       class="w-full pl-12 pr-4 py-3 bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl text-sm font-bold text-slate-700 transition-all outline-none"
+                       placeholder="0.00">
+                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-black text-xs">Ar</span>
+              </div>
+            </td>
+
+            <!-- Date Début -->
+            <td class="px-8 py-6">
+              <input type="datetime-local" 
+                     [ngModel]="formatDateForInput(p.dateDebut)"
+                     (blur)="savePrice(p)"
+                     (change)="onDateChange(p, 'dateDebut', $event)"
+                     class="px-4 py-3 bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl text-sm font-bold text-slate-700 transition-all outline-none">
+            </td>
+
+            <!-- Date Fin -->
+            <td class="px-8 py-6">
+              <input type="datetime-local" 
+                     [ngModel]="formatDateForInput(p.dateFin)"
+                     (blur)="savePrice(p)"
+                     (change)="onDateChange(p, 'dateFin', $event)"
+                     class="px-4 py-3 bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl text-sm font-bold text-slate-700 transition-all outline-none">
+            </td>
+
+            <!-- Actions -->
+            <td class="px-8 py-6 text-right">
+              <div class="flex justify-end items-center gap-2">
+                <button (click)="savePrice(p)" 
+                        class="p-3 text-emerald-500 hover:bg-emerald-50 rounded-xl transition-all active:scale-90"
+                        title="Sauvegarder">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                  </svg>
+                </button>
+                <button (click)="deletePrice(p)" 
+                        class="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-all active:scale-90"
+                        title="Supprimer">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Empty State -->
+          <tr *ngIf="prices.length === 0 && !loading">
+            <td colspan="4" class="px-8 py-20 text-center">
+              <div class="flex flex-col items-center gap-4">
+                <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-300">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <p class="text-slate-400 font-bold">Aucun prix enregistré</p>
+                <button (click)="addNewPrice()" class="text-blue-600 font-black text-sm hover:underline">Ajouter le premier prix</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="fixed inset-0 bg-white/60 backdrop-blur-sm z-50 flex items-center justify-center">
+    <div class="flex flex-col items-center gap-4">
+      <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      <p class="text-blue-600 font-black text-sm animate-pulse">Chargement des données...</p>
+    </div>
+  </div>
+
+  <!-- Notifications -->
+  <div *ngIf="notification" 
+       [class]="'fixed top-6 left-1/2 -translate-x-1/2 z-[5000] px-6 py-4 rounded-2xl shadow-2xl border backdrop-blur-md animate-in slide-in-from-top-4 duration-300 flex items-center gap-4 ' + 
+                (notification.type === 'success' ? 'bg-emerald-500/90 text-white border-emerald-400' : 'bg-red-500/90 text-white border-red-400')">
+    <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+      <svg *ngIf="notification.type === 'success'" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+      </svg>
+      <svg *ngIf="notification.type === 'error'" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+      </svg>
+    </div>
+    <span class="font-black tracking-wide">{{ notification.message }}</span>
+  </div>
+</div>

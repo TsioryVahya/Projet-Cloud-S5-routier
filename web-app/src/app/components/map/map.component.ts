@@ -42,6 +42,13 @@ export class MapComponent implements OnInit, AfterViewInit {
   public searchSuggestions: Signalement[] = [];
   public showSuggestions = false;
   
+  public getFirstPhotoUrl(s: Signalement | null): string | null {
+    if (s && s.galerie && s.galerie.length > 0) {
+      return s.galerie[0].url;
+    }
+    return null;
+  }
+  
   private readonly INITIAL_CENTER: L.LatLngExpression = [-18.8792, 47.5079];
   private readonly INITIAL_ZOOM = 13;
   

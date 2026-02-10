@@ -3,12 +3,18 @@ package com.cloud.identity.dto;
 import java.math.BigDecimal;
 
 public class SignalementDTO {
-    @com.google.cloud.firestore.annotation.PropertyName("photo_url")
-    private String photoUrl;
+    private java.util.List<GalerieItemDTO> galerie;
+
+    public static class GalerieItemDTO {
+        private String url;
+        public GalerieItemDTO(String url) { this.url = url; }
+        public String getUrl() { return url; }
+        public void setUrl(String url) { this.url = url; }
+    }
     
     @com.google.cloud.firestore.annotation.PropertyName("surface_m2")
     private Double surfaceM2;
-    
+
     @com.google.cloud.firestore.annotation.PropertyName("entreprise_id")
     private Integer entrepriseId;
 
@@ -21,17 +27,21 @@ public class SignalementDTO {
     @com.google.cloud.firestore.annotation.PropertyName("date_signalement")
     private Object dateSignalement;
 
+    @com.google.cloud.firestore.annotation.PropertyName("date_derniere_modification")
+    private Object dateDerniereModification;
+
     private String postgresId;
     private Double latitude;
     private Double longitude;
     private String description;
     private BigDecimal budget;
+    private Integer niveau;
     private String statut;
     private String typeNom;
     private String typeIcone;
     private String typeCouleur;
-    private String email; 
-    
+    private String email;
+
     @com.google.cloud.firestore.annotation.PropertyName("utilisateur_id")
     private String utilisateurId;
 
@@ -124,14 +134,20 @@ public class SignalementDTO {
         this.budget = budget;
     }
 
-    @com.google.cloud.firestore.annotation.PropertyName("photo_url")
-    public String getPhotoUrl() {
-        return photoUrl;
+    public Integer getNiveau() {
+        return niveau;
     }
 
-    @com.google.cloud.firestore.annotation.PropertyName("photo_url")
-    public void setPhotoUrl(String photoUrl) {
-        this.photoUrl = photoUrl;
+    public void setNiveau(Integer niveau) {
+        this.niveau = niveau;
+    }
+
+    public java.util.List<GalerieItemDTO> getGalerie() {
+        return galerie;
+    }
+
+    public void setGalerie(java.util.List<GalerieItemDTO> galerie) {
+        this.galerie = galerie;
     }
 
     @com.google.cloud.firestore.annotation.PropertyName("surface_m2")
@@ -182,6 +198,16 @@ public class SignalementDTO {
     @com.google.cloud.firestore.annotation.PropertyName("date_signalement")
     public void setDateSignalement(Object dateSignalement) {
         this.dateSignalement = dateSignalement;
+    }
+
+    @com.google.cloud.firestore.annotation.PropertyName("date_derniere_modification")
+    public Object getDateDerniereModification() {
+        return dateDerniereModification;
+    }
+
+    @com.google.cloud.firestore.annotation.PropertyName("date_derniere_modification")
+    public void setDateDerniereModification(Object dateDerniereModification) {
+        this.dateDerniereModification = dateDerniereModification;
     }
 
     public String getStatut() {

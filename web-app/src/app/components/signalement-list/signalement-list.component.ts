@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SignalementService } from '../../services/signalement.service';
+import { PrixM2Service, PrixM2 } from '../../services/prix-m2.service';
 import { Signalement, StatutSignalement } from '../../models/signalement.model';
 
 @Component({
@@ -23,27 +24,69 @@ export class SignalementListComponent implements OnInit {
   // Modal States
   showEditModal = false;
   showPhotoModal = false;
+  showDetailsModal = false;
+  showEvalModal = false;
+  activeMenuId: string | null = null;
+  selectedSignalement: Signalement | null = null;
   selectedPhotoUrl = '';
+  selectedPhotos: string[] = [];
+  currentPhotoIndex = 0;
   editingSignalement: any = null;
   isSaving = false;
+
+  // Evaluation state
+  evalData: any = {
+    niveau: null,
+    surfaceM2: 0,
+    entrepriseNom: '',
+    budget: 0
+  };
+  currentPrixM2: number = 0;
+
+  // Notification state
+  notification: { message: string, type: 'success' | 'error' } | null = null;
 
   // State for synchronization
   isSyncing = false;
   syncMessage = '';
 
-  constructor(private signalementService: SignalementService) {}
+  constructor(
+    private signalementService: SignalementService,
+    private prixM2Service: PrixM2Service
+  ) {}
 
   ngOnInit(): void {
     this.loadSignalements();
     this.loadStatuses();
     this.loadEntreprises();
+    this.loadCurrentPrixM2();
+  }
+
+  loadCurrentPrixM2(): void {
+    this.prixM2Service.getAll().subscribe({
+      next: (prices) => {
+        if (prices && prices.length > 0) {
+          // On prend le dernier prix valide (le plus récent par date de début)
+          const validPrices = prices.sort((a, b) => 
+            new Date(b.dateDebut).getTime() - new Date(a.dateDebut).getTime()
+          );
+          this.currentPrixM2 = validPrices[0].montant;
+        }
+      },
+      error: (err) => console.error('Erreur lors du chargement du prix m2', err)
+    });
   }
 
   loadSignalements(): void {
     this.signalementService.getAllSignalements().subscribe({
       next: (data) => {
         console.log('Données reçues du backend:', data);
-        this.signalements = data;
+        // Trier par date et heure décroissante (Modification si dispo, sinon Signalement)
+        this.signalements = data.sort((a, b) => {
+          const dateA = new Date(a.dateModification || a.dateSignalement).getTime();
+          const dateB = new Date(b.dateModification || b.dateSignalement).getTime();
+          return dateB - dateA;
+        });
         this.applyFilter();
         this.updateStats();
       },
@@ -71,14 +114,47 @@ export class SignalementListComponent implements OnInit {
     }).length;
   }
 
-  openPhotoModal(url: string): void {
-    this.selectedPhotoUrl = url;
+  openPhotoModal(s: Signalement): void {
+    this.selectedPhotos = [];
+    if (s.galerie && s.galerie.length > 0) {
+      this.selectedPhotos = s.galerie.map(g => g.url);
+    }
+    
+    this.currentPhotoIndex = 0;
+    this.selectedPhotoUrl = this.selectedPhotos.length > 0 ? this.selectedPhotos[0] : '';
     this.showPhotoModal = true;
+    
+    // Empêcher le scroll du body quand la modal est ouverte
+    document.body.style.overflow = 'hidden';
   }
 
   closePhotoModal(): void {
     this.showPhotoModal = false;
     this.selectedPhotoUrl = '';
+    this.selectedPhotos = [];
+    this.currentPhotoIndex = 0;
+    document.body.style.overflow = 'auto';
+  }
+
+  selectPhoto(index: number): void {
+    this.currentPhotoIndex = index;
+    this.selectedPhotoUrl = this.selectedPhotos[index];
+  }
+
+  nextPhoto(event?: Event): void {
+    if (event) event.stopPropagation();
+    if (this.currentPhotoIndex < this.selectedPhotos.length - 1) {
+      this.currentPhotoIndex++;
+      this.selectedPhotoUrl = this.selectedPhotos[this.currentPhotoIndex];
+    }
+  }
+
+  prevPhoto(event?: Event): void {
+    if (event) event.stopPropagation();
+    if (this.currentPhotoIndex > 0) {
+      this.currentPhotoIndex--;
+      this.selectedPhotoUrl = this.selectedPhotos[this.currentPhotoIndex];
+    }
   }
 
   loadStatuses(): void {
@@ -108,7 +184,9 @@ export class SignalementListComponent implements OnInit {
       description: signalement.description || '',
       budget: signalement.budget || 0,
       surfaceM2: signalement.surfaceM2 || 0,
-      entrepriseConcerne: signalement.entrepriseConcerne || ''
+      niveau: signalement.niveau,
+      entrepriseNom: signalement.entrepriseNom || '',
+      dateModification: new Date().toISOString().slice(0, 16) // Format YYYY-MM-DDTHH:mm
     };
     this.showEditModal = true;
   }
@@ -122,17 +200,34 @@ export class SignalementListComponent implements OnInit {
     if (!this.editingSignalement) return;
     
     this.isSaving = true;
-    this.signalementService.updateSignalement(this.editingSignalement.id, this.editingSignalement).subscribe({
+    
+    // On prépare les données pour l'envoi
+    const updateData = {
+      ...this.editingSignalement,
+      // Conversion de la date locale (YYYY-MM-DDTHH:mm) en ISO String pour le backend
+      dateModification: new Date(this.editingSignalement.dateModification).toISOString()
+    };
+    
+    this.signalementService.updateSignalement(this.editingSignalement.id, updateData).subscribe({
       next: () => {
         this.isSaving = false;
         this.closeEditModal();
         this.loadSignalements();
+        this.showNotification('Signalement mis à jour avec succès', 'success');
       },
       error: (err) => {
         console.error(err);
         this.isSaving = false;
+        this.showNotification('Erreur lors de la mise à jour du signalement', 'error');
       }
     });
+  }
+
+  showNotification(message: string, type: 'success' | 'error'): void {
+    this.notification = { message, type };
+    setTimeout(() => {
+      this.notification = null;
+    }, 3000);
   }
 
   onStatusChange(signalement: Signalement, newStatusId: string): void {
@@ -146,7 +241,10 @@ export class SignalementListComponent implements OnInit {
       description: signalement.description,
       budget: signalement.budget,
       surfaceM2: signalement.surfaceM2,
-      entrepriseConcerne: signalement.entrepriseConcerne
+      niveau: signalement.niveau || 1,
+      entrepriseNom: signalement.entrepriseNom,
+      // Par défaut, on prend "maintenant" pour le changement rapide
+      dateModification: new Date().toISOString()
     };
 
     this.signalementService.updateSignalement(id, updateData).subscribe({
@@ -195,6 +293,16 @@ export class SignalementListComponent implements OnInit {
     return 'bg-green-50 text-green-600 border-green-100 focus:ring-green-500';
   }
 
+  getNiveauClass(niveau: number | undefined): string {
+    if (!niveau) return 'bg-slate-100 text-slate-500 border-slate-200';
+    
+    if (niveau <= 3) return 'bg-emerald-50 text-emerald-600 border-emerald-100 shadow-emerald-100/50';
+    if (niveau <= 5) return 'bg-blue-50 text-blue-600 border-blue-100 shadow-blue-100/50';
+    if (niveau <= 7) return 'bg-amber-50 text-amber-600 border-amber-100 shadow-amber-100/50';
+    if (niveau <= 9) return 'bg-orange-50 text-orange-600 border-orange-100 shadow-orange-100/50';
+    return 'bg-red-50 text-red-600 border-red-100 shadow-red-100/50 animate-pulse';
+  }
+
   deleteSignalement(id: string | undefined): void {
     if (!id) return;
     if (confirm('Êtes-vous sûr de vouloir supprimer ce signalement ?')) {
@@ -224,6 +332,113 @@ export class SignalementListComponent implements OnInit {
              descStr.includes(term) || 
              emailStr.includes(term) ||
              statusStr.includes(term);
+    });
+  }
+
+  // Action Menu & Details Methods
+  toggleMenu(event: Event, id: string | undefined): void {
+    event.stopPropagation();
+    if (!id) return;
+    this.activeMenuId = this.activeMenuId === id ? null : id;
+  }
+
+  openDetailsModal(signalement: Signalement): void {
+    this.selectedSignalement = signalement;
+    this.showDetailsModal = true;
+    this.activeMenuId = null;
+    document.body.style.overflow = 'hidden';
+  }
+
+  closeDetailsModal(): void {
+    this.showDetailsModal = false;
+    this.selectedSignalement = null;
+    document.body.style.overflow = 'auto';
+  }
+
+  editFromMenu(signalement: Signalement): void {
+    this.openEditModal(signalement);
+    this.activeMenuId = null;
+  }
+
+  evalFromMenu(signalement: Signalement): void {
+    this.openEvalModal(signalement);
+    this.activeMenuId = null;
+  }
+
+  deleteFromMenu(signalement: Signalement): void {
+    const id = signalement.postgresId || signalement.id;
+    this.deleteSignalement(id);
+    this.activeMenuId = null;
+  }
+
+  openEvalModal(signalement: Signalement): void {
+    this.selectedSignalement = signalement;
+    this.selectedPhotos = [];
+    if (signalement.galerie && signalement.galerie.length > 0) {
+      this.selectedPhotos = signalement.galerie.map(g => g.url);
+    }
+    
+    this.evalData = {
+      niveau: signalement.niveau,
+      surfaceM2: signalement.surfaceM2 || 0,
+      entrepriseNom: signalement.entrepriseNom || '',
+      budget: signalement.budget || 0
+    };
+    
+    this.calculateBudget();
+    this.showEvalModal = true;
+    document.body.style.overflow = 'hidden';
+  }
+
+  closeEvalModal(): void {
+    this.showEvalModal = false;
+    this.selectedSignalement = null;
+    document.body.style.overflow = 'auto';
+  }
+
+  calculateBudget(): void {
+    this.evalData.budget = this.currentPrixM2 * this.evalData.niveau * this.evalData.surfaceM2;
+  }
+
+  saveEvaluation(): void {
+    if (!this.selectedSignalement) return;
+    
+    const id = this.selectedSignalement.postgresId || this.selectedSignalement.id;
+    if (!id) return;
+
+    this.isSaving = true;
+    
+    // Trouver l'ID du statut "En cours"
+    const enCoursStatus = this.statuses.find(st => {
+      const nom = String(st.nom || '').toLowerCase();
+      return nom === 'en cours' || nom === 'en_cours';
+    });
+
+    const updateData = {
+      id: id,
+      latitude: this.selectedSignalement.latitude,
+      longitude: this.selectedSignalement.longitude,
+      statutId: enCoursStatus ? enCoursStatus.id : 2, // 2 est souvent "En cours"
+      description: this.selectedSignalement.description || '',
+      budget: this.evalData.budget,
+      surfaceM2: this.evalData.surfaceM2,
+      niveau: this.evalData.niveau,
+      entrepriseNom: this.evalData.entrepriseNom,
+      dateModification: new Date().toISOString()
+    };
+
+    this.signalementService.updateSignalement(id, updateData).subscribe({
+      next: () => {
+        this.isSaving = false;
+        this.closeEvalModal();
+        this.loadSignalements();
+        this.showNotification('Évaluation enregistrée et statut mis à jour', 'success');
+      },
+      error: (err) => {
+        console.error(err);
+        this.isSaving = false;
+        this.showNotification('Erreur lors de l\'enregistrement de l\'évaluation', 'error');
+      }
     });
   }
 

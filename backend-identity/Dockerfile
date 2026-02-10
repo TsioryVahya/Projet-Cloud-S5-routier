@@ -18,5 +18,6 @@ RUN mvn package -DskipTests -B
 FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 COPY --from=build /app/target/*.war app.war
+COPY src/main/resources/serviceAccountKey.json /app/serviceAccountKey.json
 EXPOSE 8081
 ENTRYPOINT ["java","-jar","app.war"]

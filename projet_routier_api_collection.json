@@ -1,0 +1,585 @@
+{
+	"info": {
+		"_postman_id": "d273e331-3b54-4fd2-9dad-1bf88a515e02",
+		"name": "Projet Routier API",
+		"description": "Collection pour le projet Cloud S5 Routier - Gestion des signalements routiers.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "51072076",
+		"_collection_link": "https://randrianjanaharyodilah-1784694.postman.co/workspace/Th%C3%A9o-Vandamme's-Workspace~667a4b8a-af24-4778-8834-d3b64a5a36ea/collection/51072076-d273e331-3b54-4fd2-9dad-1bf88a515e02?action=share&source=collection_link&creator=51072076"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"manager@routier.mg\",\n    \"password\": \"manager123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nom\": \"Utilisateur Test\",\n    \"email\": \"test@gmail.com\",\n    \"motDePasse\": \"test1234\",\n    \"role\": {\n        \"id\": 2\n    },\n    \"statut\": {\n        \"id\": 1\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Unblock User",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"test@gmail.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/unblock",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"unblock"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Utilisateurs",
+			"item": [
+				{
+					"name": "List All Utilisateurs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/utilisateurs",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"utilisateurs"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Blocked Utilisateurs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/utilisateurs/blocked",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"utilisateurs",
+								"blocked"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Utilisateur",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"nouveau@gmail.com\",\n    \"motDePasse\": \"password123\",\n    \"role\": {\n        \"id\": 1\n    },\n    \"statutActuel\": {\n        \"id\": 1\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/utilisateurs",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"utilisateurs"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Utilisateur",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"modifie@gmail.com\",\n    \"role\": {\n        \"id\": 1\n    },\n    \"statutActuel\": {\n        \"id\": 1\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/utilisateurs/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"utilisateurs",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "dc65931c-b98a-45c1-b5e5-7481630da8f0"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Sync Firestore to Postgres (Users)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/utilisateurs/sync",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"utilisateurs",
+								"sync"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Sync Postgres to Firestore (Users)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/utilisateurs/sync-to-firebase",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"utilisateurs",
+								"sync-to-firebase"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Signalements",
+			"item": [
+				{
+					"name": "List All Signalements",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/signalements",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"signalements"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Signalement by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/signalements/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"signalements",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "e12056a2-9c5a-4b63-a275-b4c05da7ea08"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Signalement",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"latitude\": -18.8792,\n    \"longitude\": 47.5079,\n    \"description\": \"Nid de poule important\",\n    \"email\": \"citoyen@gmail.com\",\n    \"surfaceM2\": 2.5,\n    \"budget\": 500000,\n    \"entrepriseNom\": \"Colas Madagascar\",\n    \"typeId\": 1,\n    \"galerie\": [\n        \"https://photo-url-1.com\",\n        \"https://photo-url-2.com\"\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/signalements",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"signalements"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Signalement (Statut/Date)",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"statutId\": 2,\n    \"description\": \"Travaux en cours\",\n    \"dateModification\": \"2026-02-10T14:30:00Z\",\n    \"entrepriseNom\": \"Sogea-Satom\",\n    \"budget\": 600000,\n    \"surfaceM2\": 3.0\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/signalements/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"signalements",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Signalement",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/signalements/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"signalements",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Sync Firestore to Postgres",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/signalements/sync",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"signalements",
+								"sync"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Configuration & Referentiels",
+			"item": [
+				{
+					"name": "List Configurations",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/configurations",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"configurations"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Sync Configurations to Firebase",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/configurations/sync-to-firebase",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"configurations",
+								"sync-to-firebase"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Entreprises",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/entreprises",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"entreprises"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Types Signalement",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/types-signalement",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"types-signalement"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Sync Types to Firebase",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/types-signalement/sync-to-firebase",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"types-signalement",
+								"sync-to-firebase"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Statuts Signalement",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/statuts-signalement",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"statuts-signalement"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Historique",
+			"item": [
+				{
+					"name": "List All History",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/historique-signalements",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"historique-signalements"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get History by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/historique-signalements/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"historique-signalements",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		}
+	]
+}

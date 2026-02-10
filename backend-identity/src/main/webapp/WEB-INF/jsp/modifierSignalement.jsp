@@ -66,13 +66,13 @@
             </div>
 
             <div class="mb-3">
-                <label for="entrepriseConcerne" class="form-label">Entreprise concernée</label>
-                <input type="text" class="form-control" id="entrepriseConcerne" name="entrepriseConcerne">
+                <label for="entrepriseNom" class="form-label">Entreprise concernée</label>
+                <input type="text" class="form-control" id="entrepriseNom" name="entrepriseNom">
             </div>
 
             <div class="mb-3">
-                <label for="photoUrl" class="form-label">URL de la photo</label>
-                <input type="text" class="form-control" id="photoUrl" name="photoUrl">
+                <label for="galerie" class="form-label">URL de la photo (Galerie)</label>
+                <input type="text" class="form-control" id="galerie" name="galerie">
             </div>
 
             <div class="d-grid gap-2 mt-4">
@@ -114,8 +114,10 @@
                 document.getElementById('description').value = s.details.description || '';
                 document.getElementById('surfaceM2').value = s.details.surfaceM2 || '';
                 document.getElementById('budget').value = s.details.budget || '';
-                document.getElementById('entrepriseConcerne').value = s.details.entrepriseConcerne || '';
-                document.getElementById('photoUrl').value = s.details.photoUrl || '';
+                document.getElementById('entrepriseNom').value = (s.details.entreprise ? s.details.entreprise.nom : '') || '';
+            }
+            if (s.galerie && s.galerie.length > 0) {
+                document.getElementById('galerie').value = s.galerie[0].photoUrl || '';
             }
         } catch (error) {
             console.error('Erreur lors du chargement des données:', error);
@@ -133,6 +135,11 @@
         data.statutId = parseInt(data.statutId);
         if (data.surfaceM2) data.surfaceM2 = parseFloat(data.surfaceM2);
         if (data.budget) data.budget = parseFloat(data.budget);
+
+        // Gestion de la galerie (conversion en liste si présent)
+        if (data.galerie) {
+            data.galerie = [data.galerie];
+        }
 
         const messageDiv = document.getElementById('message');
 

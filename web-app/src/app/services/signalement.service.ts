@@ -11,8 +11,17 @@ export class SignalementService {
   private statusUrl = 'http://localhost:8081/api/statuts-signalement';
   private entrepriseUrl = 'http://localhost:8081/api/entreprises';
   private typeUrl = 'http://localhost:8081/api/types-signalement';
+  private historiqueUrl = 'http://localhost:8081/api/historique-signalements';
 
   constructor(private http: HttpClient) {}
+
+  getAverageProcessingTime(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.historiqueUrl}/stats/avg-time`);
+  }
+
+  getRecapitulatif(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/recap`);
+  }
 
   getAllSignalements(): Observable<Signalement[]> {
     return this.http.get<Signalement[]>(this.apiUrl);

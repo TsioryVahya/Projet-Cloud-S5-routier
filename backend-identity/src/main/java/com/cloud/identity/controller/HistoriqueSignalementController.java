@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/historique-signalements")
@@ -15,6 +16,11 @@ public class HistoriqueSignalementController {
 
     @Autowired
     private HistoriqueSignalementRepository repository;
+
+    @GetMapping("/stats/avg-time")
+    public ResponseEntity<List<Map<String, Object>>> getAverageProcessingTime() {
+        return ResponseEntity.ok(repository.getAverageProcessingTimeByStatus());
+    }
 
     @GetMapping
     public List<HistoriqueSignalement> getAll() {

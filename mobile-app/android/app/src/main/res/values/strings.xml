@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Routier App</string>
+    <string name="title_activity_main">Routier App</string>
+    <string name="package_name">com.company.projetCloud</string>
+    <string name="custom_url_scheme">com.company.projetCloud</string>
+</resources>

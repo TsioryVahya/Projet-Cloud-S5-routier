@@ -4,11 +4,16 @@ import TabsPage from '../views/TabsPage.vue'
 import MapView from '../views/MapView.vue'
 import ListView from '../views/ListView.vue'
 import NotificationsView from '../views/NotificationsView.vue'
+import LoginView from '../views/LoginView.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
     redirect: '/tabs/map'
+  },
+  {
+    path: '/login',
+    component: LoginView
   },
   {
     path: '/tabs',
