@@ -5,6 +5,7 @@ import com.cloud.identity.entities.Signalement;
 import com.cloud.identity.entities.SignalementsDetail;
 import com.cloud.identity.repository.SignalementsDetailRepository;
 import com.cloud.identity.service.SignalementService;
+import com.cloud.identity.repository.SignalementRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,8 +14,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/signalements")
@@ -23,6 +24,9 @@ public class SignalementController {
 
     @Autowired
     private SignalementService signalementService;
+
+    @Autowired
+    private SignalementRepository signalementRepository;
 
     @Autowired
     private SignalementsDetailRepository detailsRepository;
@@ -44,6 +48,15 @@ public class SignalementController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Unknown error", "type", e.getClass().getName()));
+        }
+    }
+
+    @GetMapping("/recap")
+    public ResponseEntity<?> getRecap() {
+        try {
+            return ResponseEntity.ok(signalementRepository.getRecapitulatifGlobal());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
         }
     }
 
