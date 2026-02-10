@@ -1,0 +1,10 @@
+target/
+*.class
+.settings/
+.classpath
+.project
+.idea/
+*.iml
+*.log
+Dockerfile
+.gitignore

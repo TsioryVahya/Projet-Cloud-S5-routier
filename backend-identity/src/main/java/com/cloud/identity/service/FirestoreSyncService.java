@@ -1,5 +1,6 @@
 package com.cloud.identity.service;
 
+import com.cloud.identity.entities.Entreprise;
 import com.cloud.identity.entities.Signalement;
 import com.cloud.identity.entities.SignalementsDetail;
 import com.cloud.identity.entities.TypeSignalement;
@@ -210,9 +211,11 @@ public class FirestoreSyncService {
                     user.getDateDeblocageAutomatique() != null ? user.getDateDeblocageAutomatique().toString() : null);
 
             // LOG POUR DEBUG : On affiche ce qu'on envoie
-            System.out.println("📤 Sync vers Firestore [" + user.getEmail() + "] - FirebaseUID: " + user.getFirebaseUid());
+            System.out.println(
+                    "📤 Sync vers Firestore [" + user.getEmail() + "] - FirebaseUID: " + user.getFirebaseUid());
 
-            // Utiliser le Firebase UID comme ID de document si disponible, sinon l'ID Postgres
+            // Utiliser le Firebase UID comme ID de document si disponible, sinon l'ID
+            // Postgres
             String documentId = user.getFirebaseUid() != null ? user.getFirebaseUid() : user.getId().toString();
             usersCol.document(documentId).set(data).get();
         } catch (Exception e) {
@@ -308,6 +311,7 @@ public class FirestoreSyncService {
                 s.setLatitude(latitude != null ? latitude : 0.0);
                 s.setLongitude(longitude != null ? longitude : 0.0);
                 s.setDateSignalement(dateSignalement);
+                s.setDateDerniereModification(dateSignalement); // Par défaut la même que la création pour un import initial
 
                 // Gérer le statut
                 String finalStatutNom = (statutNom != null) ? statutNom.toLowerCase() : "nouveau";
@@ -318,10 +322,12 @@ public class FirestoreSyncService {
                             return statutRepository.save(newStatut);
                         }));
 
-                // Gérer l'utilisateur (Priorité au Firebase UID car il est stable même si l'email change)
+                // Gérer l'utilisateur (Priorité au Firebase UID car il est stable même si
+                // l'email change)
                 String firebaseUidUtilisateur = document.getString("firebase_uid_utilisateur");
                 if (firebaseUidUtilisateur != null && !firebaseUidUtilisateur.isEmpty()) {
-                    s.setFirebaseUidUtilisateur(firebaseUidUtilisateur); // On stocke le UID dans le signalement Postgres
+                    s.setFirebaseUidUtilisateur(firebaseUidUtilisateur); // On stocke le UID dans le signalement
+                                                                         // Postgres
                     utilisateurRepository.findByFirebaseUid(firebaseUidUtilisateur).ifPresent(s::setUtilisateur);
                 }
 
@@ -451,6 +457,8 @@ public class FirestoreSyncService {
             data.put("longitude", signalement.getLongitude());
             data.put("dateSignalement",
                     signalement.getDateSignalement() != null ? signalement.getDateSignalement().toString() : null);
+            data.put("date_derniere_modification",
+                    signalement.getDateDerniereModification() != null ? signalement.getDateDerniereModification().toString() : null);
 
             if (signalement.getStatut() != null) {
                 data.put("statut", signalement.getStatut().getNom());
@@ -510,6 +518,9 @@ public class FirestoreSyncService {
             Map<String, Object> updates = new HashMap<>();
             if (signalement.getStatut() != null) {
                 updates.put("statut", signalement.getStatut().getNom());
+            }
+            if (signalement.getDateDerniereModification() != null) {
+                updates.put("date_derniere_modification", signalement.getDateDerniereModification().toString());
             }
             updates.put("postgresId", signalement.getId().toString());
             updates.put("latitude", signalement.getLatitude());

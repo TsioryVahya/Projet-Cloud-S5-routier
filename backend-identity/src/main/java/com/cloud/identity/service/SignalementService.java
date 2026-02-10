@@ -14,6 +14,7 @@ import com.cloud.identity.repository.SignalementRepository;
 import com.cloud.identity.repository.SignalementsDetailRepository;
 import com.cloud.identity.repository.StatutsSignalementRepository;
 import com.cloud.identity.repository.UtilisateurRepository;
+import com.cloud.identity.repository.TypeSignalementRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,8 +26,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import com.cloud.identity.repository.TypeSignalementRepository;
-import com.cloud.identity.repository.UtilisateurRepository;
 
 @Service
 public class SignalementService {
@@ -97,6 +96,7 @@ public class SignalementService {
             dto.setLongitude(s.getLongitude());
             dto.setIdFirebase(s.getIdFirebase());
             dto.setDateSignalement(s.getDateSignalement());
+            dto.setDateDerniereModification(s.getDateDerniereModification());
 
             // On renvoie le NOM du statut pour le dashboard web
             if (s.getStatut() != null) {
@@ -179,7 +179,9 @@ public class SignalementService {
         s.setStatut(statut);
         s.setUtilisateur(utilisateur);
         s.setType(type);
-        s.setDateSignalement(Instant.now());
+        Instant now = Instant.now();
+        s.setDateSignalement(now);
+        s.setDateDerniereModification(now);
 
         signalementRepository.save(s);
 
@@ -230,7 +232,8 @@ public class SignalementService {
     @Transactional
     public void modifierSignalement(UUID id, Double latitude, Double longitude, Integer statutId,
             String description, Double surfaceM2, BigDecimal budget,
-            String entrepriseNom, List<String> photos, Integer typeId) throws Exception {
+            String entrepriseNom, List<String> photos, Integer typeId, Instant dateModification) throws Exception {
+        
         Signalement s = signalementRepository.findById(id)
                 .orElseThrow(() -> new Exception("Signalement non trouvé"));
 
@@ -249,6 +252,7 @@ public class SignalementService {
         s.setLatitude(latitude);
         s.setLongitude(longitude);
         s.setStatut(statut);
+        s.setDateDerniereModification(dateModification != null ? dateModification : Instant.now());
 
         signalementRepository.save(s);
 
@@ -343,13 +347,18 @@ public class SignalementService {
                 } else {
                     s.setDateSignalement(Instant.parse(dateObj.toString()));
                 }
+                s.setDateDerniereModification(s.getDateSignalement());
             } catch (Exception e) {
                 System.err.println("Erreur lors du parsing de la date : " + dto.getDateSignalement()
                         + ". Utilisation de la date actuelle.");
-                s.setDateSignalement(Instant.now());
+                Instant now = Instant.now();
+                s.setDateSignalement(now);
+                s.setDateDerniereModification(now);
             }
         } else {
-            s.setDateSignalement(Instant.now());
+            Instant now = Instant.now();
+            s.setDateSignalement(now);
+            s.setDateDerniereModification(now);
         }
 
         // Gérer le statut
@@ -489,6 +498,7 @@ public class SignalementService {
                 });
 
         s.setStatut(statutEnCours);
+        s.setDateDerniereModification(Instant.now());
         signalementRepository.save(s);
         // La mise à jour Firebase est maintenant automatique via
         // SignalementEntityListener
@@ -519,23 +529,44 @@ public class SignalementService {
                 return;
             }
 
-            // Utiliser l'ID Postgres de l'utilisateur comme UID Firebase
-            // car le document dans la collection "users" est nommé avec cet ID
-            String userId = signalement.getUtilisateur().getId().toString();
-            System.out.println("🆔 Firebase UID (Postgres ID): " + userId);
+            // 1. Tenter de récupérer firebase_uid_utilisateur directement du document
+            // Firestore du signalement
+            String userId = getFirebaseUidFromSignalement(signalement.getIdFirebase());
+
+            // 2. Fallback sur l'ID Postgres si non trouvé
+            if (userId == null || userId.isEmpty()) {
+                System.out.println(
+                        "⚠️ firebase_uid_utilisateur non trouvé dans le document signalement, fallback sur l'ID Postgres");
+                userId = signalement.getUtilisateur().getId().toString();
+            }
+
+            // 3. Récupérer l'email à partir de l'UID Firebase (userId)
+            String userEmail = getEmailFromFirebaseUid(userId);
+            if (userEmail != null && !userEmail.isEmpty()) {
+                System.out.println("📧 Email récupéré à partir de l'UID: " + userEmail);
+            } else if (signalement.getUtilisateur() != null) {
+                userEmail = signalement.getUtilisateur().getEmail();
+                System.out.println("📧 Fallback sur l'email de l'entité Postgres: " + userEmail);
+            }
+
+            System.out.println("🆔 Firebase UID utilisé pour la notification: " + userId);
 
             if (userId == null || userId.isEmpty()) {
-                System.err.println("❌ Impossible de déterminer l'UID Firebase (ID Postgres manquant)");
+                System.err.println("❌ Impossible de déterminer l'UID Firebase");
                 return;
             }
 
             // Envoyer la notification via le service FCM
             System.out.println("📤 Envoi de la notification via FcmNotificationService...");
+            String typeSignalement = (signalement.getType() != null) ? signalement.getType().getNom() : "Signalement";
+
             fcmNotificationService.notifyStatusChange(
                     signalement.getIdFirebase(),
+                    typeSignalement,
                     oldStatus,
                     newStatus,
-                    userId);
+                    userId,
+                    userEmail);
             System.out.println("✅ Notification envoyée avec succès");
         } catch (Exception e) {
             System.err.println("⚠️ Erreur lors de l'envoi de la notification: " + e.getMessage());
@@ -555,7 +586,7 @@ public class SignalementService {
             System.out.println("🔍 Recherche de l'UID Firebase pour l'email: " + email);
 
             com.google.cloud.firestore.Firestore db = com.google.firebase.cloud.FirestoreClient.getFirestore();
-            com.google.cloud.firestore.QuerySnapshot querySnapshot = db.collection("users")
+            com.google.cloud.firestore.QuerySnapshot querySnapshot = db.collection("utilisateurs")
                     .whereEqualTo("email", email)
                     .limit(1)
                     .get()
@@ -571,6 +602,62 @@ public class SignalementService {
         } catch (Exception e) {
             System.err.println("⚠️ Erreur lors de la récupération de l'ID Firebase: " + e.getMessage());
             e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * Récupère l'email d'un utilisateur depuis son UID Firebase (ID du document
+     * dans collection utilisateurs)
+     */
+    private String getEmailFromFirebaseUid(String firebaseUid) {
+        try {
+            System.out.println("🔍 Récupération de l'email pour l'UID Firebase: " + firebaseUid);
+            com.google.cloud.firestore.Firestore db = com.google.firebase.cloud.FirestoreClient.getFirestore();
+
+            // Tenter d'abord dans la collection "utilisateurs" (priorité)
+            com.google.cloud.firestore.DocumentSnapshot doc = db.collection("utilisateurs")
+                    .document(firebaseUid)
+                    .get()
+                    .get();
+
+            if (doc.exists()) {
+                String email = doc.getString("email");
+                System.out.println(
+                        "✅ Email trouvé dans collection 'utilisateurs' pour l'UID " + firebaseUid + ": " + email);
+                return email;
+            }
+
+            System.err.println(
+                    "❌ Aucun utilisateur trouvé pour l'UID: " + firebaseUid + " dans 'utilisateurs'");
+        } catch (Exception e) {
+            System.err.println(
+                    "⚠️ Erreur lors de la récupération de l'email pour l'UID " + firebaseUid + ": " + e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * Récupère le firebase_uid_utilisateur depuis le document du signalement dans
+     * Firestore
+     */
+    private String getFirebaseUidFromSignalement(String signalementIdFirebase) {
+        try {
+            System.out.println(
+                    "🔍 Récupération du firebase_uid_utilisateur pour le signalement: " + signalementIdFirebase);
+            com.google.cloud.firestore.Firestore db = com.google.firebase.cloud.FirestoreClient.getFirestore();
+            com.google.cloud.firestore.DocumentSnapshot doc = db.collection("signalements")
+                    .document(signalementIdFirebase)
+                    .get()
+                    .get();
+
+            if (doc.exists()) {
+                String uid = doc.getString("firebase_uid_utilisateur");
+                System.out.println("✅ firebase_uid_utilisateur trouvé: " + uid);
+                return uid;
+            }
+        } catch (Exception e) {
+            System.err.println("⚠️ Erreur lors de la récupération du firebase_uid_utilisateur: " + e.getMessage());
         }
         return null;
     }
