@@ -260,9 +260,6 @@
                   <span class="text-slate-400">Budget</span>
                   <span class="text-slate-700">{{ s.budget ? (s.budget | currency:'MGA ':'symbol':'1.0-0') : 'N/A' }}</span>
                 </div>
-                <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                  <div class="bg-blue-500 h-full rounded-full transition-all duration-500" [style.width]="s.budget ? '65%' : '0%'"></div>
-                </div>
                 <div class="flex items-center justify-between text-[10px] font-bold text-slate-400">
                   <span>Surface</span>
                   <span>{{ s.surfaceM2 ? s.surfaceM2 + ' m²' : 'N/A' }}</span>
@@ -272,7 +269,7 @@
             <td class="px-8 py-6 text-right relative">
               <div class="flex justify-end items-center gap-3">
                 <!-- Niveau Badge -->
-                <div *ngIf="s.niveau" 
+                <div *ngIf="s.niveau !== null && s.niveau !== undefined" 
                      [class]="'w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black border-2 shadow-sm transition-transform hover:scale-110 cursor-help ' + getNiveauClass(s.niveau)"
                      [title]="'Niveau de gravité: ' + s.niveau + '/10'">
                   {{ s.niveau }}
@@ -293,6 +290,12 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     Détails
+                  </button>
+                  <button (click)="evalFromMenu(s)" *ngIf="s.statut.toLowerCase() === 'nouveau'" class="w-full px-5 py-3 text-left text-sm font-bold text-blue-600 hover:bg-blue-50 flex items-center gap-3 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                    Évaluer
                   </button>
                   <button (click)="editFromMenu(s)" class="w-full px-5 py-3 text-left text-sm font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-3 transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -374,6 +377,141 @@
             <div *ngIf="currentPhotoIndex === i" class="absolute inset-0 bg-blue-500/10 backdrop-blur-[2px]"></div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Evaluation Modal -->
+  <div *ngIf="showEvalModal && selectedSignalement" 
+       class="fixed inset-0 z-[4000] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+    <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in duration-300 flex flex-col max-h-[90vh]">
+      <!-- Modal Header -->
+      <div class="p-8 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
+        <div>
+          <h3 class="text-2xl font-black text-slate-900 tracking-tight">Évaluation du Signalement</h3>
+          <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">ID: #{{ selectedSignalement.postgresId || selectedSignalement.id }}</p>
+        </div>
+        <button (click)="closeEvalModal()" class="w-10 h-10 bg-slate-50 hover:bg-slate-100 rounded-full text-slate-400 flex items-center justify-center transition-all">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="overflow-y-auto custom-scrollbar flex-1">
+        <!-- Photo Gallery (Carousel) -->
+        <div class="bg-slate-50 p-4 border-b border-slate-100">
+          <div class="flex items-center gap-2 mb-3">
+            <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Galerie Photos</span>
+          </div>
+          
+          <div *ngIf="selectedPhotos.length > 0" class="flex gap-4 overflow-x-auto pb-4 px-2 snap-x custom-scrollbar">
+            <div *ngFor="let photo of selectedPhotos" class="snap-center shrink-0 w-64 aspect-video rounded-2xl overflow-hidden shadow-sm border border-white">
+              <img [src]="photo" class="w-full h-full object-cover">
+            </div>
+          </div>
+          
+          <div *ngIf="selectedPhotos.length === 0" class="flex flex-col items-center justify-center py-12 bg-white rounded-2xl border-2 border-dashed border-slate-200">
+            <svg class="w-12 h-12 text-slate-200 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span class="text-xs font-bold text-slate-400">Aucune photo disponible</span>
+          </div>
+        </div>
+
+        <div class="p-8 space-y-6">
+          <div class="grid grid-cols-2 gap-6">
+            <!-- Niveau -->
+            <div class="space-y-2">
+              <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Niveau de gravité (1-10)</label>
+              <div class="relative flex items-center gap-4">
+                <input type="range" min="1" max="10" [(ngModel)]="evalData.niveau" (ngModelChange)="calculateBudget()"
+                       class="flex-1 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                <div class="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 font-black">
+                  {{ evalData.niveau }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Surface -->
+            <div class="space-y-2">
+              <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Surface estimée (m²)</label>
+              <div class="relative group">
+                <input type="number" [(ngModel)]="evalData.surfaceM2" (ngModelChange)="calculateBudget()"
+                       class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-700 font-bold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all"
+                       placeholder="0">
+                <span class="absolute right-5 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-300">m²</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Entreprise -->
+          <div class="space-y-2">
+            <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Assigner une entreprise</label>
+            <select [(ngModel)]="evalData.entrepriseNom"
+                    class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-700 font-bold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all appearance-none cursor-pointer">
+              <option value="">Sélectionner une entreprise</option>
+              <option *ngFor="let ent of entreprises" [value]="ent.nom">{{ ent.nom }}</option>
+            </select>
+          </div>
+
+          <!-- Budget Calculé & Visualisation -->
+          <div class="bg-blue-600 rounded-3xl p-6 text-white shadow-xl shadow-blue-600/20 relative overflow-hidden">
+            <!-- Background Decoration -->
+            <div class="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+            
+            <div class="relative z-10">
+              <div class="flex items-center justify-between mb-4">
+                <span class="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Budget Estimé</span>
+                <span class="px-3 py-1 bg-white/20 rounded-full text-[10px] font-black uppercase">Calcul Automatique</span>
+              </div>
+              
+              <div class="text-3xl font-black mb-6">
+                {{ evalData.budget | currency:'MGA ':'symbol':'1.0-0' }}
+              </div>
+              
+              <div class="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
+                <p class="text-[10px] font-black uppercase tracking-widest opacity-60 mb-2">Détails du calcul</p>
+                <div class="flex items-center gap-3 font-mono text-sm">
+                  <div class="flex flex-col">
+                    <span class="text-[10px] opacity-60 mb-1 uppercase font-sans">Prix/m²</span>
+                    <span>{{ currentPrixM2 | number:'1.0-0' }}</span>
+                  </div>
+                  <span class="text-white/40">×</span>
+                  <div class="flex flex-col">
+                    <span class="text-[10px] opacity-60 mb-1 uppercase font-sans">Niveau</span>
+                    <span>{{ evalData.niveau }}</span>
+                  </div>
+                  <span class="text-white/40">×</span>
+                  <div class="flex flex-col">
+                    <span class="text-[10px] opacity-60 mb-1 uppercase font-sans">Surface</span>
+                    <span>{{ evalData.surfaceM2 }} m²</span>
+                  </div>
+                  <span class="text-white/40 ml-auto">=</span>
+                  <span class="font-black ml-2">{{ evalData.budget | number:'1.0-0' }} MGA</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-8 border-t border-slate-100 bg-white flex items-center gap-4">
+        <button (click)="closeEvalModal()" 
+                class="flex-1 py-4 bg-slate-50 hover:bg-slate-100 text-slate-500 rounded-2xl text-xs font-black uppercase tracking-widest transition-all">
+          Annuler
+        </button>
+        <button (click)="saveEvaluation()" 
+                [disabled]="isSaving || !evalData.entrepriseNom || evalData.surfaceM2 <= 0"
+                class="flex-[2] py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-blue-600/20 transition-all flex items-center justify-center gap-2">
+          <span *ngIf="isSaving" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+          {{ isSaving ? 'Enregistrement...' : 'Enregistrer l\'évaluation' }}
+        </button>
       </div>
     </div>
   </div>

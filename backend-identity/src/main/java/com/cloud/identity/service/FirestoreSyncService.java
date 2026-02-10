@@ -289,7 +289,7 @@ public class FirestoreSyncService {
                 List<Map<String, Object>> galerieFirestore = (List<Map<String, Object>>) document.get("galerie");
 
                 Double surfaceM2 = getAsDouble(document, "surfaceM2");
-                Integer niveau = document.get("niveau") != null ? document.getLong("niveau").intValue() : 1;
+                Integer niveau = document.get("niveau") != null ? document.getLong("niveau").intValue() : null;
 
                 String entrepriseConcerneVal = document.getString("entreprise");
                 if (entrepriseConcerneVal == null)
@@ -480,7 +480,7 @@ public class FirestoreSyncService {
                     data.put("description", details.getDescription());
                     data.put("surfaceM2", details.getSurfaceM2());
                     data.put("budget", details.getBudget() != null ? details.getBudget().toString() : null);
-                    data.put("niveau", details.getNiveau() != null ? details.getNiveau() : 1);
+                    data.put("niveau", details.getNiveau());
 
                     if (details.getEntreprise() != null) {
                         data.put("entreprise", details.getEntreprise().getNom());
@@ -538,7 +538,7 @@ public class FirestoreSyncService {
                 data.put("description", d.getDescription());
                 data.put("surfaceM2", d.getSurfaceM2());
                 data.put("budget", d.getBudget() != null ? d.getBudget().toString() : null);
-                data.put("niveau", d.getNiveau() != null ? d.getNiveau() : 1);
+                data.put("niveau", d.getNiveau());
                 
                 if (d.getEntreprise() != null) {
                     data.put("entreprise", d.getEntreprise().getNom());

@@ -111,7 +111,7 @@ CREATE TABLE signalements_details (
     budget DECIMAL(15, 2),
     entreprise_id INT REFERENCES entreprises(id),
     galerie_id UUID, -- Sera lié à la galerie si besoin d'une photo principale ou groupe
-    niveau INT DEFAULT 1 -- Niveau du signalement de 1 à 10
+    niveau INT -- Niveau du signalement de 1 à 10
 );
 
 -- Table de la Galerie des Signalements (Multiples images)
