@@ -143,7 +143,7 @@ export class SignalementListComponent implements OnInit {
       description: signalement.description || '',
       budget: signalement.budget || 0,
       surfaceM2: signalement.surfaceM2 || 0,
-      entrepriseConcerne: signalement.entrepriseConcerne || ''
+      entrepriseNom: signalement.entrepriseNom || ''
     };
     this.showEditModal = true;
   }
@@ -181,7 +181,7 @@ export class SignalementListComponent implements OnInit {
       description: signalement.description,
       budget: signalement.budget,
       surfaceM2: signalement.surfaceM2,
-      entrepriseConcerne: signalement.entrepriseConcerne
+      entrepriseNom: signalement.entrepriseNom
     };
 
     this.signalementService.updateSignalement(id, updateData).subscribe({

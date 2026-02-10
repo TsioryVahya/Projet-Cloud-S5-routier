@@ -6,7 +6,7 @@ $body = @{
     email = "test@example.com"
     surfaceM2 = 100.5
     budget = 5000
-    entrepriseConcerne = "Test Entreprise"
+    entrepriseNom = "Test Entreprise"
 } | ConvertTo-Json
 
 Write-Host "📤 Envoi de la requête..." -ForegroundColor Cyan

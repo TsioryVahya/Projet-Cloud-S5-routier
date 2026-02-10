@@ -12,7 +12,6 @@ export interface Signalement {
   description?: string;
   surface_m2?: number;
   budget?: number;
-  entreprise_concerne?: string;
   entreprise?: string | null;
   galerie?: Array<{url: string}>;
   

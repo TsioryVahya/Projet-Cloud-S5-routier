@@ -49,13 +49,13 @@
             </div>
 
             <div class="mb-3">
-                <label for="entrepriseConcerne" class="form-label">Entreprise concernée</label>
-                <input type="text" class="form-control" id="entrepriseConcerne" name="entrepriseConcerne" placeholder="Nom de l'entreprise">
+                <label for="entrepriseNom" class="form-label">Entreprise concernée</label>
+                <input type="text" class="form-control" id="entrepriseNom" name="entrepriseNom" placeholder="Nom de l'entreprise">
             </div>
 
             <div class="mb-3">
-                <label for="photoUrl" class="form-label">URL de la photo</label>
-                <input type="text" class="form-control" id="photoUrl" name="photoUrl" placeholder="https://lien-image.com/photo.jpg">
+                <label for="galerie" class="form-label">URL de la photo (Galerie)</label>
+                <input type="text" class="form-control" id="galerie" name="galerie" placeholder="https://lien-image.com/photo.jpg">
             </div>
 
             <div class="d-grid gap-2 mt-4">
@@ -78,6 +78,11 @@
         data.longitude = parseFloat(data.longitude);
         if (data.surfaceM2) data.surfaceM2 = parseFloat(data.surfaceM2);
         if (data.budget) data.budget = parseFloat(data.budget);
+
+        // Gestion de la galerie (conversion en liste si présent)
+        if (data.galerie) {
+            data.galerie = [data.galerie];
+        }
 
         const messageDiv = document.getElementById('message');
 

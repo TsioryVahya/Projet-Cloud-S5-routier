@@ -825,7 +825,7 @@ const updateMarkers = () => {
           <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-3">
             ${s.galerie && s.galerie.length > 0 
               ? s.galerie.map((img: any) => `<img src="${img.url}" class="w-40 h-28 object-cover rounded-xl flex-shrink-0 shadow-sm border border-slate-100">`).join('')
-              : (s.photo_url ? `<img src="${s.photo_url}" class="w-full h-28 object-cover rounded-xl shadow-sm border border-slate-100">` : '<div class="w-full h-28 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300 text-[10px] uppercase font-bold">Pas d\'image</div>')}
+              : '<div class="w-full h-28 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300 text-[10px] uppercase font-bold">Pas d\'image</div>'}
           </div>
 
           <div class="space-y-2">
@@ -846,10 +846,10 @@ const updateMarkers = () => {
               ` : ''}
             </div>
 
-            ${s.entreprise_concerne || s.entreprise ? `
+            ${s.entreprise ? `
               <div class="mt-2 p-2 bg-blue-50/50 rounded-lg border border-blue-100/50">
                 <span class="text-[8px] font-bold text-blue-400 uppercase tracking-wider block mb-0.5">Entreprise concernée</span>
-                <span class="text-[10px] font-bold text-blue-700">${s.entreprise_concerne || s.entreprise}</span>
+                <span class="text-[10px] font-bold text-blue-700">${s.entreprise}</span>
               </div>
             ` : ''}
           </div>

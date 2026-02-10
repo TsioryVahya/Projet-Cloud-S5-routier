@@ -119,7 +119,7 @@
                     const budget = s.budget ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'MGA' }).format(s.budget) : '-';
                     const surface = s.surfaceM2 ? s.surfaceM2 + ' m²' : '-';
 
-                    const firstPhoto = (s.galerie && s.galerie.length > 0) ? s.galerie[0].url : s.photoUrl;
+                    const firstPhoto = (s.galerie && s.galerie.length > 0) ? s.galerie[0].url : null;
 
                     const row = `
                         <tr class="hover:bg-slate-50/80 transition-colors group">

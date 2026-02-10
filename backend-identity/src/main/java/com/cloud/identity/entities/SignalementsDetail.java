@@ -37,9 +37,6 @@ public class SignalementsDetail {
     @JoinColumn(name = "galerie_id")
     private GalerieSignalement galerie;
 
-    @Column(name = "entreprise_concerne")
-    private String entrepriseConcerne;
-
     public UUID getId() {
         return id;
     }
@@ -95,13 +92,4 @@ public class SignalementsDetail {
     public void setGalerie(GalerieSignalement galerie) {
         this.galerie = galerie;
     }
-
-    public String getEntrepriseConcerne() {
-        return entrepriseConcerne;
-    }
-
-    public void setEntrepriseConcerne(String entrepriseConcerne) {
-        this.entrepriseConcerne = entrepriseConcerne;
-    }
-
 }
