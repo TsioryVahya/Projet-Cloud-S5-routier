@@ -731,21 +731,44 @@ const updateMarkers = () => {
       .addTo(map!)
       .bindPopup(`
         <div class="popup-container p-0 overflow-hidden font-sans">
-          <!-- Image Header -->
-          <div class="relative h-32 w-full bg-slate-100 overflow-hidden">
+          <!-- Image Header avec Carrousel -->
+          <div class="relative h-40 w-full bg-slate-100 overflow-hidden">
             ${s.galerie && s.galerie.length > 0 
-              ? `<img src="${s.galerie[0].url}" class="w-full h-full object-cover">`
+              ? `
+                <div class="carousel-container flex overflow-x-auto snap-x snap-mandatory no-scrollbar h-full w-full">
+                  ${s.galerie.map((img: any, idx: number) => `
+                    <div class="carousel-item flex-shrink-0 w-full h-full snap-center relative">
+                      <img src="${img.url}" class="w-full h-full object-cover">
+                      ${s.galerie.length > 1 ? `
+                        <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+                          ${s.galerie.map((_: any, i: number) => `
+                            <div class="w-1.5 h-1.5 rounded-full ${i === idx ? 'bg-white shadow-sm' : 'bg-white/40'}"></div>
+                          `).join('')}
+                        </div>
+                      ` : ''}
+                    </div>
+                  `).join('')}
+                </div>
+                ${s.galerie.length > 1 ? `
+                  <div class="absolute top-1/2 -translate-y-1/2 left-2 z-20 w-6 h-6 bg-black/30 backdrop-blur-sm rounded-full flex items-center justify-center text-white text-[10px]">
+                    <ion-icon name="chevron-back-outline"></ion-icon>
+                  </div>
+                  <div class="absolute top-1/2 -translate-y-1/2 right-2 z-20 w-6 h-6 bg-black/30 backdrop-blur-sm rounded-full flex items-center justify-center text-white text-[10px]">
+                    <ion-icon name="chevron-forward-outline"></ion-icon>
+                  </div>
+                ` : ''}
+              `
               : `<div class="w-full h-full flex flex-col items-center justify-center text-slate-300">
                    <ion-icon name="image-outline" class="text-3xl mb-1"></ion-icon>
                    <span class="text-[9px] font-black uppercase tracking-widest">Pas d'image</span>
                  </div>`
             }
-            <div class="absolute top-2 left-2 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-lg" 
+            <div class="absolute top-2 left-2 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-lg z-20" 
                  style="background-color: ${getStatusColor(s.statut)}">
               ${s.statut}
             </div>
             ${s.galerie && s.galerie.length > 1 
-              ? `<div class="absolute bottom-2 right-2 px-2 py-1 rounded-lg bg-black/60 backdrop-blur-md text-white text-[9px] font-black">+${s.galerie.length - 1} photos</div>` 
+              ? `<div class="absolute bottom-2 right-2 px-2 py-1 rounded-lg bg-black/60 backdrop-blur-md text-white text-[9px] font-black z-20">${s.galerie.length} photos</div>` 
               : ''}
           </div>
 
@@ -758,22 +781,26 @@ const updateMarkers = () => {
 
             <h3 class="font-bold text-slate-800 text-sm leading-snug line-clamp-2">${s.description || 'Sans description'}</h3>
             
-            ${(s.surface_m2 || s.budget) ? `
-              <div class="flex gap-2 pt-3 border-t border-slate-50">
-                ${s.surface_m2 ? `
-                  <div class="flex-1 bg-slate-50 p-2 rounded-xl border border-slate-100">
-                    <span class="text-[7px] font-black text-slate-400 uppercase block leading-none mb-1">Surface</span>
-                    <span class="text-[10px] font-bold text-slate-700">${s.surface_m2} m²</span>
-                  </div>
-                ` : ''}
-                ${s.budget ? `
-                  <div class="flex-1 bg-emerald-50 p-2 rounded-xl border border-emerald-100">
-                    <span class="text-[7px] font-black text-emerald-400 uppercase block leading-none mb-1">Budget</span>
-                    <span class="text-[10px] font-bold text-emerald-700">${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'MGA', maximumFractionDigits: 0 }).format(s.budget)}</span>
-                  </div>
-                ` : ''}
-              </div>
-            ` : ''}
+            <div class="flex flex-wrap gap-2 pt-3 border-t border-slate-50">
+              ${s.surface_m2 ? `
+                <div class="flex-1 min-w-[80px] bg-slate-50 p-2 rounded-xl border border-slate-100">
+                  <span class="text-[7px] font-black text-slate-400 uppercase block leading-none mb-1">Surface</span>
+                  <span class="text-[10px] font-bold text-slate-700">${s.surface_m2} m²</span>
+                </div>
+              ` : ''}
+              ${s.niveau ? `
+                <div class="flex-1 min-w-[80px] bg-orange-50 p-2 rounded-xl border border-orange-100">
+                  <span class="text-[7px] font-black text-orange-400 uppercase block leading-none mb-1">Niveau</span>
+                  <span class="text-[10px] font-bold text-orange-700">${s.niveau}</span>
+                </div>
+              ` : ''}
+              ${s.budget ? `
+                <div class="flex-1 min-w-[80px] bg-emerald-50 p-2 rounded-xl border border-emerald-100">
+                  <span class="text-[7px] font-black text-emerald-400 uppercase block leading-none mb-1">Budget</span>
+                  <span class="text-[10px] font-bold text-emerald-700">${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'MGA', maximumFractionDigits: 0 }).format(s.budget)}</span>
+                </div>
+              ` : ''}
+            </div>
 
             ${s.entreprise ? `
               <div class="bg-blue-50 p-2.5 rounded-xl border border-blue-100 flex items-center gap-2">
@@ -898,13 +925,25 @@ onMounted(() => {
 }
 
 /* Ionic Toast Customization */
-.custom-toast {
-  --background: rgba(255, 255, 255, 0.9);
-  --backdrop-filter: blur(10px);
-  --color: #1e293b;
-  --button-color: #3b82f6;
-  --border-radius: 20px;
-  --box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  font-weight: 700;
-}
+  .custom-toast {
+    --background: rgba(255, 255, 255, 0.9);
+    --backdrop-filter: blur(10px);
+    --color: #1e293b;
+    --button-color: #3b82f6;
+    --border-radius: 20px;
+    --box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    font-weight: 700;
+  }
+
+  /* Carousel Scroll Snap */
+  .carousel-container {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .carousel-container::-webkit-scrollbar {
+    display: none;
+  }
+  .carousel-item {
+    scroll-snap-align: center;
+  }
 </style>
