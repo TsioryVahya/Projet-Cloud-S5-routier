@@ -28,22 +28,24 @@ services:
   backend:
     build: ./backend-identity
     container_name: cloud-s5-backend
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     ports:
       - "8081:8081"
-    volumes:
-      - ./backend-identity/src/main/resources/serviceAccountKey.json:/app/serviceAccountKey.json
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/routier_db
       - SPRING_DATASOURCE_USERNAME=user_cloud
       - SPRING_DATASOURCE_PASSWORD=password_cloud
-      - GRPC_DNS_RESOLVER=native
-      - GOOGLE_APPLICATION_CREDENTIALS=/app/serviceAccountKey.json
     depends_on:
       - db
 
   web:
     build: ./web-app
     container_name: cloud-s5-web
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     ports:
       - "4200:80"
     depends_on:
