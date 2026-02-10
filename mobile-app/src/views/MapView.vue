@@ -77,152 +77,152 @@
         class="custom-toast"
       ></ion-toast>
 
-      <!-- Modal de Signalement Rapide (Style Bottom Sheet) -->
-      <div v-if="newSignalementPoint" class="absolute inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm transition-all duration-300">
-        <div class="w-full bg-white rounded-t-[40px] shadow-2xl flex flex-col max-h-[92vh] animate-slide-up overflow-hidden">
-          <!-- Handle de drag (visuel) -->
-          <div class="w-full flex justify-center pt-4 pb-2">
-            <div class="w-12 h-1.5 bg-slate-200 rounded-full"></div>
-          </div>
+    </ion-content>
 
-          <div class="px-6 pb-4 flex items-center justify-between border-b border-slate-50">
-            <div>
-              <h3 class="text-xl font-black text-slate-800">Nouveau signalement</h3>
-              <p class="text-xs font-medium text-slate-400">Position : {{ newSignalementPoint.lat.toFixed(4) }}, {{ newSignalementPoint.lng.toFixed(4) }}</p>
-            </div>
-            <button @click="newSignalementPoint = null" class="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 active:scale-90 transition-all">
-              <ion-icon :icon="closeOutline" class="text-2xl" />
-            </button>
+    <!-- Modal de Signalement Rapide (Style Bottom Sheet) -->
+    <div v-if="newSignalementPoint" class="fixed inset-0 z-[9999] flex items-end justify-center bg-black/60 backdrop-blur-md transition-all duration-300">
+      <div class="w-full bg-white rounded-t-[40px] shadow-2xl flex flex-col max-h-[95vh] animate-slide-up overflow-hidden pb-safe">
+        <!-- Handle de drag (visuel) -->
+        <div class="w-full flex justify-center pt-4 pb-2">
+          <div class="w-12 h-1.5 bg-slate-200 rounded-full"></div>
+        </div>
+
+        <div class="px-6 pb-4 flex items-center justify-between border-b border-slate-50">
+          <div>
+            <h3 class="text-xl font-black text-slate-800">Nouveau signalement</h3>
+            <p class="text-xs font-medium text-slate-400">Position : {{ newSignalementPoint.lat.toFixed(4) }}, {{ newSignalementPoint.lng.toFixed(4) }}</p>
           </div>
-          
-          <div class="p-6 space-y-6 overflow-y-auto flex-1 no-scrollbar">
-            <!-- Sélection du type de signalement -->
-            <div>
-              <label class="block text-xs font-black text-slate-800 uppercase tracking-wider mb-4">Quel est le problème ?</label>
-              <div class="grid grid-cols-3 gap-3">
+          <button @click="newSignalementPoint = null" class="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 active:scale-90 transition-all">
+            <ion-icon :icon="closeOutline" class="text-2xl" />
+          </button>
+        </div>
+        
+        <div class="p-6 space-y-6 overflow-y-auto flex-1 no-scrollbar">
+          <!-- Sélection du type de signalement -->
+          <div>
+            <label class="block text-xs font-black text-slate-800 uppercase tracking-wider mb-4">Quel est le problème ?</label>
+            <div class="grid grid-cols-3 gap-3">
+              <div 
+                v-for="type in typesSignalement" 
+                :key="type.id"
+                @click="selectedTypeId = type.id"
+                :class="[
+                  'relative rounded-2xl p-4 flex flex-col items-center gap-2 transition-all border-2 group',
+                  selectedTypeId === type.id ? 'border-blue-500 bg-blue-50 shadow-lg shadow-blue-500/10' : 'border-slate-100 bg-white hover:border-slate-200'
+                ]"
+              >
                 <div 
-                  v-for="type in typesSignalement" 
-                  :key="type.id"
-                  @click="selectedTypeId = type.id"
-                  :class="[
-                    'relative rounded-2xl p-4 flex flex-col items-center gap-2 transition-all border-2 group',
-                    selectedTypeId === type.id ? 'border-blue-500 bg-blue-50 shadow-lg shadow-blue-500/10' : 'border-slate-100 bg-white hover:border-slate-200'
-                  ]"
+                  class="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm transition-transform group-active:scale-90"
+                  :style="{ backgroundColor: type.couleur + (selectedTypeId === type.id ? '30' : '15') }"
                 >
-                  <div 
-                    class="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm transition-transform group-active:scale-90"
-                    :style="{ backgroundColor: type.couleur + (selectedTypeId === type.id ? '30' : '15') }"
-                  >
-                    <svg viewBox="0 0 24 24" class="w-7 h-7" :style="{ fill: type.couleur }">
-                      <path :d="type.icone_path" />
-                    </svg>
-                  </div>
-                  <span :class="[
-                    'text-[10px] font-black text-center leading-tight uppercase tracking-tight',
-                    selectedTypeId === type.id ? 'text-blue-700' : 'text-slate-500'
-                  ]">
-                    {{ type.nom }}
-                  </span>
-                  <div v-if="selectedTypeId === type.id" class="absolute -top-1 -right-1 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
-                    <ion-icon :icon="checkmarkOutline" class="text-white text-[10px]" />
-                  </div>
+                  <svg viewBox="0 0 24 24" class="w-7 h-7" :style="{ fill: type.couleur }">
+                    <path :d="type.icone_path" />
+                  </svg>
+                </div>
+                <span :class="[
+                  'text-[10px] font-black text-center leading-tight uppercase tracking-tight',
+                  selectedTypeId === type.id ? 'text-blue-700' : 'text-slate-500'
+                ]">
+                  {{ type.nom }}
+                </span>
+                <div v-if="selectedTypeId === type.id" class="absolute -top-1 -right-1 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+                  <ion-icon :icon="checkmarkOutline" class="text-white text-[10px]" />
                 </div>
               </div>
             </div>
+          </div>
 
-            <div>
-              <label class="block text-xs font-black text-slate-800 uppercase tracking-wider mb-3">Description (Optionnel)</label>
-              <textarea 
-                v-model="reportDescription" 
-                rows="3" 
-                placeholder="Ex: Nid de poule profond, éclairage en panne..." 
-                class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm font-medium text-slate-700 resize-none"
-              ></textarea>
+          <div>
+            <label class="block text-xs font-black text-slate-800 uppercase tracking-wider mb-3">Description (Optionnel)</label>
+            <textarea 
+              v-model="reportDescription" 
+              rows="3" 
+              placeholder="Ex: Nid de poule profond, éclairage en panne..." 
+              class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm font-medium text-slate-700 resize-none"
+            ></textarea>
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-3">
+              <label class="block text-xs font-black text-slate-800 uppercase tracking-wider">Preuve photo</label>
+              <span v-if="reportPhotos.length > 0" class="text-[10px] font-bold text-slate-400">{{ reportPhotos.length }}/5</span>
             </div>
-
-            <div>
-              <div class="flex justify-between items-center mb-3">
-                <label class="block text-xs font-black text-slate-800 uppercase tracking-wider">Preuve photo</label>
-                <span v-if="reportPhotos.length > 0" class="text-[10px] font-bold text-slate-400">{{ reportPhotos.length }}/5</span>
+            
+            <div class="grid grid-cols-3 gap-3">
+              <!-- Miniatures existantes -->
+              <div v-for="(photo, index) in reportPhotos" :key="index" class="relative aspect-square rounded-2xl overflow-hidden group border border-slate-100 shadow-sm animate-in zoom-in duration-200">
+                <img :src="photo" class="w-full h-full object-cover">
+                <button @click="removePhoto(index)" class="absolute top-1.5 right-1.5 z-10 bg-red-500 text-white w-7 h-7 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform">
+                  <ion-icon :icon="closeOutline" class="text-lg" />
+                </button>
               </div>
               
-              <div class="grid grid-cols-3 gap-3">
-                <!-- Miniatures existantes -->
-                <div v-for="(photo, index) in reportPhotos" :key="index" class="relative aspect-square rounded-2xl overflow-hidden group border border-slate-100 shadow-sm animate-in zoom-in duration-200">
-                  <img :src="photo" class="w-full h-full object-cover">
-                  <button @click="removePhoto(index)" class="absolute top-1.5 right-1.5 z-10 bg-red-500 text-white w-7 h-7 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform">
-                    <ion-icon :icon="closeOutline" class="text-lg" />
-                  </button>
-                </div>
-                
-                <!-- Bouton d'ajout principal -->
-                <div 
-                  v-if="reportPhotos.length < 5"
-                  @click="showPhotoActionSheet = true" 
-                  class="aspect-square bg-blue-50 border-2 border-dashed border-blue-200 rounded-2xl flex flex-col items-center justify-center text-blue-600 cursor-pointer active:bg-blue-100 transition-colors"
-                >
-                  <ion-icon :icon="cameraOutline" class="text-2xl mb-1" />
-                  <span class="text-[9px] font-black uppercase tracking-tighter">Ajouter</span>
-                </div>
+              <!-- Bouton d'ajout principal -->
+              <div 
+                v-if="reportPhotos.length < 5"
+                @click="showPhotoActionSheet = true" 
+                class="aspect-square bg-blue-50 border-2 border-dashed border-blue-200 rounded-2xl flex flex-col items-center justify-center text-blue-600 cursor-pointer active:bg-blue-100 transition-colors"
+              >
+                <ion-icon :icon="cameraOutline" class="text-2xl mb-1" />
+                <span class="text-[9px] font-black uppercase tracking-tighter">Ajouter</span>
               </div>
             </div>
           </div>
-
-          <div class="p-6 bg-white border-t border-slate-50 flex gap-4">
-            <button @click="newSignalementPoint = null" class="flex-1 py-4 bg-slate-50 text-slate-500 font-black rounded-2xl active:scale-95 transition-all text-sm uppercase tracking-wider">Annuler</button>
-            <button 
-              @click="submitReport" 
-              :disabled="isSubmitting || !selectedTypeId" 
-              :class="[
-                'flex-[2] py-4 font-black rounded-2xl shadow-xl transition-all flex items-center justify-center text-sm uppercase tracking-widest',
-                isSubmitting || !selectedTypeId ? 'bg-slate-200 text-slate-400 shadow-none' : 'bg-blue-600 text-white shadow-blue-500/30 active:scale-95'
-              ]"
-            >
-              <span v-if="isSubmitting" class="animate-spin mr-3">
-                <ion-icon :icon="syncOutline" class="text-xl" />
-              </span>
-              <span v-else class="mr-2">
-                <ion-icon :icon="sendOutline" />
-              </span>
-              {{ isSubmitting ? 'Envoi...' : 'Signaler' }}
-            </button>
-          </div>
         </div>
-      </div>
 
-      <!-- Action Sheet pour Photos -->
-      <div v-if="showPhotoActionSheet" class="absolute inset-0 z-[60] flex items-end justify-center bg-black/60 backdrop-blur-sm px-4 pb-6 transition-all duration-300" @click.self="showPhotoActionSheet = false">
-        <div class="w-full max-w-sm space-y-3 animate-slide-up">
-          <div class="bg-white rounded-3xl overflow-hidden shadow-2xl">
-            <button @click="takePhoto(); showPhotoActionSheet = false" class="w-full py-5 px-6 flex items-center gap-4 text-slate-700 active:bg-slate-50 border-b border-slate-50">
-              <div class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
-                <ion-icon :icon="cameraOutline" class="text-xl" />
-              </div>
-              <span class="font-bold text-sm">Prendre une photo</span>
-            </button>
-            <button @click="triggerFileSelect(); showPhotoActionSheet = false" class="w-full py-5 px-6 flex items-center gap-4 text-slate-700 active:bg-slate-50">
-              <div class="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
-                <ion-icon :icon="imageOutline" class="text-xl" />
-              </div>
-              <span class="font-bold text-sm">Choisir dans la galerie</span>
-            </button>
-          </div>
-          <button @click="showPhotoActionSheet = false" class="w-full py-5 bg-white text-slate-500 font-black rounded-3xl shadow-xl active:scale-95 transition-all text-sm uppercase tracking-widest">
-            Annuler
+        <div class="p-6 bg-white border-t border-slate-50 flex gap-4">
+          <button @click="newSignalementPoint = null" class="flex-1 py-4 bg-slate-50 text-slate-500 font-black rounded-2xl active:scale-95 transition-all text-sm uppercase tracking-wider">Annuler</button>
+          <button 
+            @click="submitReport" 
+            :disabled="isSubmitting || !selectedTypeId" 
+            :class="[
+              'flex-[2] py-4 font-black rounded-2xl shadow-xl transition-all flex items-center justify-center text-sm uppercase tracking-widest',
+              isSubmitting || !selectedTypeId ? 'bg-slate-200 text-slate-400 shadow-none' : 'bg-blue-600 text-white shadow-blue-500/30 active:scale-95'
+            ]"
+          >
+            <span v-if="isSubmitting" class="animate-spin mr-3">
+              <ion-icon :icon="syncOutline" class="text-xl" />
+            </span>
+            <span v-else class="mr-2">
+              <ion-icon :icon="sendOutline" />
+            </span>
+            {{ isSubmitting ? 'Envoi...' : 'Signaler' }}
           </button>
         </div>
       </div>
+    </div>
 
-      <input 
-        type="file" 
-        ref="fileInputRef" 
-        multiple 
-        accept="image/*" 
-        class="hidden" 
-        @change="handleFileSelect"
-      >
+    <!-- Action Sheet pour Photos -->
+    <div v-if="showPhotoActionSheet" class="fixed inset-0 z-[10000] flex items-end justify-center bg-black/60 backdrop-blur-sm px-4 pb-6 transition-all duration-300" @click.self="showPhotoActionSheet = false">
+      <div class="w-full max-w-sm space-y-3 animate-slide-up">
+        <div class="bg-white rounded-3xl overflow-hidden shadow-2xl">
+          <button @click="takePhoto(); showPhotoActionSheet = false" class="w-full py-5 px-6 flex items-center gap-4 text-slate-700 active:bg-slate-50 border-b border-slate-50">
+            <div class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
+              <ion-icon :icon="cameraOutline" class="text-xl" />
+            </div>
+            <span class="font-bold text-sm">Prendre une photo</span>
+          </button>
+          <button @click="triggerFileSelect(); showPhotoActionSheet = false" class="w-full py-5 px-6 flex items-center gap-4 text-slate-700 active:bg-slate-50">
+            <div class="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+              <ion-icon :icon="imageOutline" class="text-xl" />
+            </div>
+            <span class="font-bold text-sm">Choisir dans la galerie</span>
+          </button>
+        </div>
+        <button @click="showPhotoActionSheet = false" class="w-full py-5 bg-white text-slate-500 font-black rounded-3xl shadow-xl active:scale-95 transition-all text-sm uppercase tracking-widest">
+          Annuler
+        </button>
+      </div>
+    </div>
 
-    </ion-content>
+    <input 
+      type="file" 
+      ref="fileInputRef" 
+      multiple 
+      accept="image/*" 
+      class="hidden" 
+      @change="handleFileSelect"
+    >
   </ion-page>
 </template>
 
