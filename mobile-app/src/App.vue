@@ -44,14 +44,15 @@ onMounted(() => {
     setSignalements(data);
   });
 
-  // 2. Gérer la session persistante
-  const savedUserStr = localStorage.getItem('app_user');
+  // 2. Gérer la session
+  // Utiliser sessionStorage au lieu de localStorage pour que la session expire à la fermeture de l'onglet/app
+  const savedUserStr = sessionStorage.getItem('app_user');
   if (savedUserStr) {
     const savedUser = JSON.parse(savedUserStr);
     if (savedUser.expiresAt) {
       const expirationDate = new Date(savedUser.expiresAt);
       if (expirationDate < new Date()) {
-        localStorage.removeItem('app_user');
+        sessionStorage.removeItem('app_user');
         setUser(null);
       } else {
         setUser(savedUser);
