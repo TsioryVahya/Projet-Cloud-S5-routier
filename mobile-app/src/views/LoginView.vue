@@ -122,8 +122,8 @@ import { setUser } from '../store';
 import { notificationService } from '../services/notificationService';
 
 const router = useRouter();
-const loginEmail = ref('');
-const loginPassword = ref('');
+const loginEmail = ref('pardefaut@gmail.com');
+const loginPassword = ref('pardefaut@gmail.com');
 const authError = ref('');
 const isAuthLoading = ref(false);
 
