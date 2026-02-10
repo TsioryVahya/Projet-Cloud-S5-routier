@@ -416,7 +416,7 @@ const resizeImage = (base64: string, maxWidth = 800, maxHeight = 800, quality = 
 
 const handleLogout = async () => {
   setUser(null);
-  localStorage.removeItem('app_user');
+  sessionStorage.removeItem('app_user');
   filterMine.value = false;
   
   // Nettoyer les notifications

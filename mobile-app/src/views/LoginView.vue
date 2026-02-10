@@ -193,7 +193,7 @@ const handleLogin = async () => {
       };
 
       setUser(appUser);
-      localStorage.setItem('app_user', JSON.stringify(appUser));
+      sessionStorage.setItem('app_user', JSON.stringify(appUser));
       
       try {
         await signInWithEmailAndPassword(auth, email, password);
